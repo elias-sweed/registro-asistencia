@@ -12,7 +12,8 @@ import type { ToastTipo } from '../components/Toast'
 import { useAuth } from '../context/authContext'
 import {
   PROGRAMAS,
-  TURNOS,
+  TURNO,
+  TURNO_TEXTO,
   aplicaCiclo,
   ciclosDe,
   formatearFecha,
@@ -22,10 +23,10 @@ import { borrarCuentaPendiente } from '../lib/cuentaPendiente'
 import { obtenerIpPublica } from '../lib/ip'
 import { supabase } from '../lib/supabase'
 import { limpiarNombre, validarNombre } from '../lib/validacion'
-import type { Programa, Turno } from '../lib/types'
+import type { Programa } from '../lib/types'
 
 type Errores = Partial<
-  Record<'nombres' | 'apellidos' | 'programa' | 'ciclo' | 'turno' | 'asistio', string>
+  Record<'nombres' | 'apellidos' | 'programa' | 'ciclo' | 'asistio', string>
 >
 
 type Bloqueo = {
@@ -35,7 +36,7 @@ type Bloqueo = {
   pie?: string
 }
 
-const HORA_INICIO_TARDE = 12
+const HORA_APERTURA = 12
 
 export function Registro() {
   const { sesion, cargando } = useAuth()
@@ -62,7 +63,6 @@ function Formulario({ uid }: { uid: string }) {
   const [apellidos, setApellidos] = useState('')
   const [programa, setPrograma] = useState<Programa | ''>('')
   const [ciclo, setCiclo] = useState<number | ''>('')
-  const [turno, setTurno] = useState<Turno | ''>('')
   const [asistio, setAsistio] = useState(false)
   const [errores, setErrores] = useState<Errores>({})
   const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(() =>
@@ -153,7 +153,6 @@ const [ahora, setAhora] = useState(() => new Date())
       setApellidos(data.apellidos ?? '')
       setPrograma(data.programa ?? '')
       setCiclo(data.ciclo ?? '')
-      setTurno(data.turno ?? '')
     })()
     return () => {
       activo = false
@@ -176,7 +175,6 @@ const [ahora, setAhora] = useState(() => new Date())
     if (!programa) nuevos.programa = 'Selecciona tu programa.'
     if (programa && aplicaCiclo(programa) && ciclo === '')
       nuevos.ciclo = 'Selecciona tu ciclo.'
-    if (!turno) nuevos.turno = 'Selecciona tu turno.'
     if (!asistio) nuevos.asistio = 'Debes marcar la asistencia para registrar.'
 
     return nuevos
@@ -195,15 +193,14 @@ const [ahora, setAhora] = useState(() => new Date())
     const apellidoLimpio = apellidos.trim()
     const cicloFinal = aplicaCiclo(programa) ? Number(ciclo) : null
 
-    // Hora del dispositivo: el turno tarde solo marca desde las 12:00.
+    // Hora del dispositivo: el registro se abre desde las 12:00.
     const ahora = new Date()
     const horaDispositivo = ahora.getHours()
 
-    if (turno === 'TARDE' && horaDispositivo < HORA_INICIO_TARDE) {
+    if (horaDispositivo < HORA_APERTURA) {
       setBloqueo({
-        titulo: 'Todavía no es tu turno',
-        descripcion:
-          'Seleccionaste el turno TARDE, pero su horario empieza a las 12:00 del mediodía. Vuelve a entrar a esta hora para marcar.',
+        titulo: 'Todavía no es la hora',
+        descripcion: `La asistencia del turno ${TURNO_TEXTO} se registra a partir de las 12:00 del mediodía. Vuelve a entrar a esta hora para marcar.`,
         detalle: (
           <>
             <span className="block text-xs tracking-[0.18em] text-perla-400 uppercase">
@@ -213,7 +210,7 @@ const [ahora, setAhora] = useState(() => new Date())
               {formatearFecha(ahora)}
             </span>
             <span className="mt-2 block text-xs text-perla-300">
-              El turno TARDE se registra a partir de las 12:00.
+              El registro se habilita desde las 12:00.
             </span>
           </>
         ),
@@ -229,7 +226,7 @@ const [ahora, setAhora] = useState(() => new Date())
       p_apellidos: apellidoLimpio,
       p_programa: programa as Programa,
       p_ciclo: cicloFinal,
-      p_turno: turno as Turno,
+      p_turno: TURNO,
       p_fecha: fechaISO,
       p_ip: ip,
       p_hora: horaDispositivo,
@@ -252,9 +249,8 @@ const [ahora, setAhora] = useState(() => new Date())
       }
       if (/FUERA_DE_HORARIO/.test(error.message)) {
         setBloqueo({
-          titulo: 'Todavía no es tu turno',
-          descripcion:
-            'El turno TARDE se registra a partir de las 12:00 del mediodía. Vuelve a entrar a esa hora.',
+          titulo: 'Todavía no es la hora',
+          descripcion: `La asistencia del turno ${TURNO_TEXTO} se registra a partir de las 12:00 del mediodía. Vuelve a entrar a esa hora.`,
         })
         throw error
       }
@@ -437,22 +433,18 @@ const [ahora, setAhora] = useState(() => new Date())
               </Campo>
             </div>
 
-            <Campo id="turno" etiqueta="Turno" error={errores.turno}>
-              <select
+            <Campo id="turno" etiqueta="Turno">
+              <input
                 id="turno"
                 name="turno"
-                required
-                value={turno}
-                onChange={(e) => setTurno(e.target.value as Turno | '')}
-                className={claseCampo(Boolean(errores.turno))}
-              >
-                <option value="">Selecciona…</option>
-                {TURNOS.map((opcion) => (
-                  <option key={opcion.valor} value={opcion.valor}>
-                    {opcion.texto}
-                  </option>
-                ))}
-              </select>
+                type="text"
+                readOnly
+                value={TURNO_TEXTO}
+                className="campo cursor-not-allowed bg-ink-950 text-perla-300"
+              />
+              <p className="mt-1.5 text-xs text-perla-400">
+                La institución tiene un solo turno. El registro se abre a las 12:00.
+              </p>
             </Campo>
 
             <Campo id="fecha" etiqueta="Fecha y hora del registro">

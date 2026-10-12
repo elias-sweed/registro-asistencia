@@ -8,8 +8,9 @@ do $$ begin
   create type public.programa as enum ('SENATI', 'UCV', 'DOCENTE_API');
 exception when duplicate_object then null; end $$;
 
+-- Un solo turno: Tarde
 do $$ begin
-  create type public.turno as enum ('MANANA', 'TARDE');
+  create type public.turno as enum ('TARDE');
 exception when duplicate_object then null; end $$;
 
 -- 2) Tabla de practicantes ------------------------------------------
@@ -36,7 +37,7 @@ create table if not exists public.asistencias (
   apellidos        text not null check (char_length(trim(apellidos)) >= 2),
   programa        public.programa not null default 'SENATI',
   ciclo           smallint check (ciclo is null or ciclo between 1 and 10),
-  turno           public.turno not null,
+  turno           public.turno not null default 'TARDE',
   asistio         boolean not null default true check (asistio = true),
   fecha           timestamptz not null default now(),
   creado_en       timestamptz not null default now()

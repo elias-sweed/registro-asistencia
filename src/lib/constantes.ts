@@ -34,14 +34,10 @@ export function aplicaCiclo(valor: Programa | '') {
   return buscarPrograma(valor)?.aplicaCiclo ?? false
 }
 
-export const TURNOS: { valor: Turno; texto: string }[] = [
-  { valor: 'MANANA', texto: 'Mañana' },
-  { valor: 'TARDE', texto: 'Tarde' },
-]
+/** La institución tiene un solo turno. */
+export const TURNO: Turno = 'TARDE'
 
-export function textoTurno(turno: Turno | null) {
-  return TURNOS.find((t) => t.valor === turno)?.texto ?? '-'
-}
+export const TURNO_TEXTO = 'Tarde'
 
 const formatoFecha = new Intl.DateTimeFormat('es', {
   dateStyle: 'long',
