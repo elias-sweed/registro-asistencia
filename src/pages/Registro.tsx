@@ -14,7 +14,6 @@ import { esAdministrador } from '../lib/admin'
 import {
   PROGRAMAS,
   TURNO,
-  TURNO_TEXTO,
   aplicaCiclo,
   ciclosDe,
   formatearFecha,
@@ -22,7 +21,7 @@ import {
 } from '../lib/constantes'
 import { obtenerIpPublica } from '../lib/ip'
 import { supabase } from '../lib/supabase'
-import { codigoDesdeCorreo, limpiarNombre, validarNombre } from '../lib/validacion'
+import { limpiarNombre, validarNombre } from '../lib/validacion'
 import type { Programa } from '../lib/types'
 
 type Errores = Partial<
@@ -38,7 +37,7 @@ type Bloqueo = {
 
 const HORA_INICIO = 8
 const HORA_FIN = 8
-const MINUTO_FIN = 15
+const MINUTO_FIN = 30
 
 export function Registro() {
   const { sesion, cargando, correo } = useAuth()
@@ -71,7 +70,7 @@ function PantallaCarga() {
 }
 
 function Formulario({ uid }: { uid: string }) {
-  const { correo, salir } = useAuth()
+  const { salir } = useAuth()
 
   const [bienvenida, setBienvenida] = useState(true)
   const [nombres, setNombres] = useState('')
@@ -197,7 +196,7 @@ const [ahora, setAhora] = useState(() => new Date())
     const apellidoLimpio = apellidos.trim()
     const cicloFinal = aplicaCiclo(programa) ? Number(ciclo) : null
 
-    // Ventana unica: de 8:00 a 8:15 segun el reloj del dispositivo.
+    // Ventana unica: de 8:00 a 8:30 segun el reloj del dispositivo.
     const ahora = new Date()
     const horaDispositivo = ahora.getHours()
     const minutoDispositivo = ahora.getMinutes()
@@ -208,7 +207,7 @@ const [ahora, setAhora] = useState(() => new Date())
     if (!dentroDeHorario) {
       setBloqueo({
         titulo: 'Fuera del horario de registro',
-        descripcion: `La asistencia solo se puede marcar de 8:00 a 8:15 de la mañana. Vuelve a entrar en ese horario.`,
+        descripcion: 'La asistencia solo se puede marcar de 8:00 a 8:30 de la mañana. Vuelve a entrar en ese horario.',
         detalle: (
           <>
             <span className="block text-xs tracking-[0.18em] text-perla-400 uppercase">
@@ -218,7 +217,7 @@ const [ahora, setAhora] = useState(() => new Date())
               {formatearFecha(ahora)}
             </span>
             <span className="mt-2 block text-xs text-perla-300">
-              Ventana de registro: 8:00 – 8:15
+              Ventana de registro: 8:00 – 8:30
             </span>
           </>
         ),
@@ -246,7 +245,7 @@ const [ahora, setAhora] = useState(() => new Date())
         setBloqueo({
           titulo: 'Solo se puede registrar una vez',
           descripcion:
-            'Desde este dispositivo ya se registró una asistencia. No es posible volver a marcar, aunque se cree una cuenta con otro correo o se abra desde otro navegador.',
+            'Desde este dispositivo ya se registró una asistencia. No es posible volver a marcar, aunque se cree otra cuenta o se abra desde otro navegador.',
           detalle: (
             <span className="font-mono text-xs">
               IP del dispositivo: <span className="text-oro-400">{ip ?? 'no detectada'}</span>
@@ -260,7 +259,7 @@ const [ahora, setAhora] = useState(() => new Date())
         setBloqueo({
           titulo: 'Fuera del horario de registro',
           descripcion:
-            'La asistencia solo se puede marcar de 8:00 a 8:15 de la mañana. Vuelve a entrar en ese horario.',
+            'La asistencia solo se puede marcar de 8:00 a 8:30 de la mañana. Vuelve a entrar en ese horario.',
         })
         throw error
       }
@@ -291,8 +290,8 @@ const [ahora, setAhora] = useState(() => new Date())
       <div className="textura pointer-events-none fixed inset-0" aria-hidden="true" />
 
       <BienvenidaModal
-        visible={bienvenida}
-        detalle={`Código ${codigoDesdeCorreo(correo)} · preparando tu registro`}
+        visible={bienvenida && !yaRegistro}
+        detalle="Bienvenido · prepara tus datos"
         onCerrar={cerrarBienvenida}
       />
 
@@ -303,9 +302,16 @@ const [ahora, setAhora] = useState(() => new Date())
       {yaRegistro && !celebracion && !bloqueo && (
         <ModalBloqueo
           visible
-          titulo="Ya tienes tu asistencia registrada"
-          descripcion="Solo se puede registrar una vez. Tu registro ya está guardado, por lo que el formulario ya no está disponible."
+          titulo="Ya registraste tu asistencia"
+          descripcion="La asistencia se registra una sola vez por cuenta y una sola vez por dispositivo. Tu registro ya está guardado, así que el formulario queda bloqueado."
+          detalle={
+            <span className="text-xs">
+              No se puede volver a marcar con esta cuenta ni creando una cuenta nueva desde el
+              mismo dispositivo.
+            </span>
+          }
           pie="Si crees que se trata de un error, comunícate con el coordinador de la institución."
+          textoBoton="Salir del sistema"
           onCerrar={() => void salir()}
         />
       )}
@@ -332,7 +338,7 @@ const [ahora, setAhora] = useState(() => new Date())
               <h1 className="font-display text-2xl leading-tight font-semibold text-perla-50">
                 Registro de Asistencia
               </h1>
-              <p className="truncate text-sm text-perla-300">Código {codigoDesdeCorreo(correo)}</p>
+              <p className="truncate text-sm text-perla-300">{nombres} {apellidos}</p>
             </div>
           </div>
           <button
@@ -449,11 +455,11 @@ const [ahora, setAhora] = useState(() => new Date())
                 name="turno"
                 type="text"
                 readOnly
-                value={TURNO_TEXTO}
+                value="Un solo turno"
                 className="campo cursor-not-allowed bg-ink-950 text-perla-300"
               />
               <p className="mt-1.5 text-xs text-perla-400">
-                La institución tiene un solo turno. El registro se abre de 8:00 a 8:15.
+                La institución tiene un solo turno. El registro se abre de 8:00 a 8:30.
               </p>
             </Campo>
 

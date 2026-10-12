@@ -1,5 +1,5 @@
 -- =============================================================
---  HORARIO DE REGISTRO: 8:00 a 8:15
+--  HORARIO DE REGISTRO: 8:00 a 8:30
 --  Dashboard de Supabase -> SQL Editor -> New query -> Run
 --  Reemplaza la funcion registrar_asistencia con el nuevo horario.
 -- =============================================================
@@ -43,8 +43,8 @@ begin
     raise exception 'CAMPOS_OBLIGATORIOS';
   end if;
 
-  -- Ventana unica: de 8:00 a 8:15 (hora del dispositivo).
-  if coalesce(p_hora, -1) <> 8 or coalesce(p_minuto, -1) >= 15 then
+  -- Ventana unica: de 8:00 a 8:30 (hora del dispositivo).
+  if coalesce(p_hora, -1) <> 8 or coalesce(p_minuto, -1) >= 30 then
     raise exception 'FUERA_DE_HORARIO';
   end if;
 

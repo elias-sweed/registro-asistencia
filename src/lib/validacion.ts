@@ -20,31 +20,16 @@ export function limpiarNombre(valor: string) {
 
 const RE_CORREO = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
 
-/** Convierte un código de practicante en el correo interno que usa Supabase. */
-export function correoDesdeCodigo(codigo: string) {
-  const limpio = codigo
+/** Genera el correo interno que usa Supabase a partir del nombre y apellido. */
+export function correoDesdeNombre(nombre: string, apellidos: string) {
+  const parte = `${nombre} ${apellidos}`
     .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9._-]/g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-  return `${limpio || 'practicante'}@asistencia.local`
-}
-
-export function validarCodigo(valor: string): string | null {
-  const texto = valor.trim()
-
-  if (!texto) return 'El código es obligatorio.'
-  if (texto.length < 3) return 'El código debe tener al menos 3 caracteres.'
-  if (texto.length > 40) return 'El código no puede superar los 40 caracteres.'
-
-  return null
-}
-
-/** Quita el dominio interno para mostrar solo el código del practicante. */
-export function codigoDesdeCorreo(correo: string) {
-  return correo.split('@')[0] || correo
+  return `${parte || 'practicante'}@asistencia.local`
 }
 
 export function validarCorreo(valor: string): string | null {

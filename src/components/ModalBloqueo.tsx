@@ -6,6 +6,7 @@ export function ModalBloqueo({
   descripcion,
   detalle,
   pie,
+  textoBoton = 'Entendido',
   onCerrar,
 }: {
   visible: boolean
@@ -13,6 +14,7 @@ export function ModalBloqueo({
   descripcion: string
   detalle?: React.ReactNode
   pie?: string
+  textoBoton?: string
   onCerrar: () => void
 }) {
   if (!visible) return null
@@ -68,7 +70,7 @@ export function ModalBloqueo({
           {pie && <p className="mt-4 text-xs text-perla-400">{pie}</p>}
 
           <button type="button" onClick={onCerrar} className="boton-rojo mt-5">
-            Entendido
+            {textoBoton}
           </button>
         </div>
       </div>

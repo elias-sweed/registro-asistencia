@@ -7,14 +7,15 @@ import { FondoRayos } from '../components/FondoRayos'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
 import { supabase } from '../lib/supabase'
-import { correoDesdeCodigo, validarClave, validarCodigo } from '../lib/validacion'
+import { correoDesdeNombre, limpiarNombre, validarClave, validarNombre } from '../lib/validacion'
 
 type Modo = 'ingresar' | 'registrar'
 
 export function Login() {
   const { sesion, cargando } = useAuth()
   const [modo, setModo] = useState<Modo>('ingresar')
-  const [codigo, setCodigo] = useState('')
+  const [nombre, setNombre] = useState('')
+  const [apellidos, setApellidos] = useState('')
   const [clave, setClave] = useState('')
   const [repetirClave, setRepetirClave] = useState('')
   const [error, setError] = useState('')
@@ -50,9 +51,15 @@ export function Login() {
     evento.preventDefault()
     setError('')
 
-    const errorCodigo = validarCodigo(codigo)
-    if (errorCodigo) {
-      setError(errorCodigo)
+    const errorNombre = validarNombre(nombre)
+    if (errorNombre) {
+      setError(errorNombre)
+      return
+    }
+
+    const errorApellidos = validarNombre(apellidos)
+    if (errorApellidos) {
+      setError(errorApellidos)
       return
     }
 
@@ -68,7 +75,7 @@ export function Login() {
     }
 
     setEnviando(true)
-    const correoInterno = correoDesdeCodigo(codigo)
+    const correoInterno = correoDesdeNombre(nombre, apellidos)
 
     try {
       if (esRegistro) {
@@ -82,7 +89,7 @@ export function Login() {
         )
           throw errorRegistro
 
-        // Si ya existe ese codigo, se entra directamente con la misma clave.
+        // Si esa cuenta ya existe, se entra con la misma clave.
         if (data?.session) return
 
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
@@ -129,26 +136,45 @@ export function Login() {
           </h2>
           <p className="mt-1 text-center text-sm text-perla-300">
             {esRegistro
-              ? 'Elige tu código y una contraseña. Tu cuenta queda lista al instante.'
-              : 'Escribe tu código y contraseña para marcar tu asistencia.'}
+              ? 'Nombres, apellidos y contraseña. Tu cuenta queda lista al instante.'
+              : 'Escribe tu nombre, apellidos y contraseña para marcar tu asistencia.'}
           </p>
 
           <form onSubmit={manejarEnvio} noValidate className="mt-5 space-y-4">
             <div>
-              <label htmlFor="codigo" className="rotulo mb-1.5 block">
-                Tu código *
+              <label htmlFor="nombre" className="rotulo mb-1.5 block">
+                Nombres *
               </label>
               <input
-                id="codigo"
-                name="codigo"
+                id="nombre"
+                name="nombre"
                 type="text"
                 required
-                minLength={3}
-                maxLength={40}
-                autoComplete="username"
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value)}
-                placeholder="PE-2026"
+                minLength={2}
+                maxLength={60}
+                autoComplete="given-name"
+                value={nombre}
+                onChange={(e) => setNombre(limpiarNombre(e.target.value))}
+                placeholder="Juan Carlos"
+                className="campo"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="apellidos" className="rotulo mb-1.5 block">
+                Apellidos *
+              </label>
+              <input
+                id="apellidos"
+                name="apellidos"
+                type="text"
+                required
+                minLength={2}
+                maxLength={60}
+                autoComplete="family-name"
+                value={apellidos}
+                onChange={(e) => setApellidos(limpiarNombre(e.target.value))}
+                placeholder="Quispe Huamán"
                 className="campo"
               />
             </div>
@@ -228,9 +254,12 @@ export function Login() {
 function mensajeDeError(fallo: unknown) {
   const mensaje = fallo instanceof Error ? fallo.message : 'Ocurrió un error, inténtalo otra vez.'
 
-  if (/Invalid login credentials/i.test(mensaje)) return 'Código o contraseña incorrectos.'
+  if (/Invalid login credentials/i.test(mensaje))
+    return 'Nombre, apellidos o contraseña incorrectos.'
+  if (/signups are disabled/i.test(mensaje))
+    return 'En Supabase activa "Enable email signup" en Authentication → Providers → Email.'
   if (/User already registered|already been registered/i.test(mensaje))
-    return 'Ese código ya está registrado. Ingresa con tu contraseña.'
+    return 'Esa cuenta ya existe. Ingresa con tu contraseña.'
   if (/Password should be at least/i.test(mensaje))
     return 'La contraseña debe tener al menos 6 caracteres.'
   return mensaje
