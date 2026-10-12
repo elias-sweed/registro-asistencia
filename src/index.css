@@ -1,0 +1,222 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Lora', Georgia, 'Times New Roman', serif;
+
+  --color-ink-950: #08080b;
+  --color-ink-900: #0c0c12;
+  --color-ink-850: #111119;
+  --color-ink-800: #171721;
+  --color-ink-700: #21212d;
+  --color-ink-600: #2f2f3d;
+
+  --color-perla-50: #f7f2e8;
+  --color-perla-100: #ece3d2;
+  --color-perla-200: #d7cbb2;
+  --color-perla-300: #b5a68b;
+  --color-perla-400: #8b7d66;
+
+  --color-oro-300: #ecd9a0;
+  --color-oro-400: #dcbe6e;
+  --color-oro-500: #c9a227;
+  --color-oro-600: #a5821d;
+
+  --color-carmesi-500: #b32026;
+  --color-carmesi-400: #d4343a;
+  --color-brasa-400: #d99a4e;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-ink-950);
+    background-image:
+      radial-gradient(circle at 50% -10%, rgba(201, 162, 39, 0.14), transparent 55%),
+      radial-gradient(circle at 100% 100%, rgba(18, 24, 60, 0.6), transparent 50%);
+    background-attachment: fixed;
+    color: var(--color-perla-100);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--color-oro-500);
+    color: var(--color-ink-950);
+  }
+
+  select option {
+    background-color: var(--color-ink-850);
+    color: var(--color-perla-100);
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-perla-50);
+    -webkit-box-shadow: 0 0 0 1000px var(--color-ink-850) inset;
+    caret-color: var(--color-perla-50);
+  }
+}
+
+@keyframes toast {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Grano de papel sobre el fondo negro */
+.textura {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+.panel {
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  background: linear-gradient(180deg, rgba(23, 23, 33, 0.96), rgba(12, 12, 18, 0.96));
+  box-shadow:
+    0 24px 60px -28px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(236, 217, 160, 0.09);
+}
+
+.rotulo {
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-oro-400);
+}
+
+.campo {
+  width: 100%;
+  border: 1px solid var(--color-ink-600);
+  border-radius: 0.375rem;
+  background-color: rgba(8, 8, 11, 0.75);
+  padding: 0.7rem 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--color-perla-50);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.campo::placeholder {
+  color: var(--color-perla-400);
+  opacity: 0.6;
+}
+
+.campo:focus {
+  border-color: var(--color-oro-500);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.16);
+}
+
+.campo-error {
+  border-color: var(--color-carmesi-400);
+  background-color: rgba(179, 32, 38, 0.08);
+}
+
+.campo-error:focus {
+  border-color: var(--color-carmesi-400);
+  box-shadow: 0 0 0 3px rgba(212, 52, 58, 0.18);
+}
+
+.campo[readonly] {
+  cursor: not-allowed;
+  border-color: var(--color-ink-700);
+  background-color: rgba(8, 8, 11, 0.9);
+  color: var(--color-perla-300);
+}
+
+.boton-oro {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(236, 217, 160, 0.55);
+  border-radius: 0.375rem;
+  background: linear-gradient(180deg, var(--color-oro-400), var(--color-oro-600));
+  padding: 0.7rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-ink-950);
+  transition: filter 0.2s, transform 0.1s;
+}
+
+.boton-oro:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.boton-oro:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.boton-oro:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.boton-rojo {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 120, 125, 0.6);
+  border-radius: 0.375rem;
+  background: linear-gradient(180deg, var(--color-carmesi-400), var(--color-carmesi-500));
+  padding: 0.7rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-perla-50);
+  transition: filter 0.2s, transform 0.1s;
+}
+
+.boton-rojo:hover {
+  filter: brightness(1.12);
+}
+
+.boton-rojo:active {
+  transform: translateY(1px);
+}
+
+.enlace {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-oro-400);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+
+.enlace:hover {
+  color: var(--color-oro-300);
+}
