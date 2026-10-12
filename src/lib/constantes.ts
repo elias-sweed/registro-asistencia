@@ -34,10 +34,10 @@ export function aplicaCiclo(valor: Programa | '') {
   return buscarPrograma(valor)?.aplicaCiclo ?? false
 }
 
-/** La institución tiene un solo turno. */
+/** La institución tiene un solo turno: Tarde y Mañana (ambos en la mañana). */
 export const TURNO: Turno = 'TARDE'
 
-export const TURNO_TEXTO = 'Tarde'
+export const TURNO_TEXTO = 'Tarde y Mañana'
 
 export function textoTurno(turno: Turno | null) {
   return turno === TURNO ? TURNO_TEXTO : '-'

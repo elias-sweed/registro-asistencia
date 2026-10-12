@@ -1,5 +1,5 @@
 -- =============================================================
---  TURNO UNICO + HORARIO 8:00 a 8:30 + UN SOLO REGISTRO
+--  TURNO UNICO + UN SOLO REGISTRO (sin restriccion de horario)
 --  Dashboard de Supabase -> SQL Editor -> New query -> Run
 --  Se puede ejecutar varias veces sin romper nada.
 -- =============================================================
@@ -7,8 +7,8 @@
 -- 1) Quitar lo que depende del enum antes de recrearlo -------
 drop view if exists public.vista_asistencias;
 drop view if exists public.vista_registros_ip;
-drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text, smallint);
 drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text, smallint, smallint);
+drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text, smallint);
 drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, public.turno, timestamptz, text, smallint);
 
 -- 2) Dejar el enum con un solo valor: Tarde -------------------
@@ -59,9 +59,7 @@ create or replace function public.registrar_asistencia(
   p_programa  public.programa,
   p_ciclo     smallint,
   p_fecha     timestamptz default now(),
-  p_ip        text default null,
-  p_hora      smallint default null,
-  p_minuto    smallint default null
+  p_ip        text default null
 )
 returns text
 language plpgsql
@@ -90,11 +88,7 @@ begin
     raise exception 'CAMPOS_OBLIGATORIOS';
   end if;
 
-  -- Ventana unica: de 8:00 a 8:30 (hora del dispositivo).
-  if coalesce(p_hora, -1) <> 8 or coalesce(p_minuto, -1) >= 30 then
-    raise exception 'FUERA_DE_HORARIO';
-  end if;
-
+  -- Sin restriccion de horario: se puede marcar a cualquier hora.
   v_ciclo := case when p_programa = 'DOCENTE_API' then null else coalesce(p_ciclo, 1) end;
 
   v_ip := nullif(btrim(coalesce(p_ip, '')), '');
@@ -145,8 +139,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text, smallint, smallint) from public, anon;
-grant execute on function public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text, smallint, smallint) to authenticated;
+revoke execute on function public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text) from public, anon;
+grant execute on function public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text) to authenticated;
 
 -- 5) Vistas de control (solo service_role) -------------------
 create or replace view public.vista_asistencias as

@@ -94,8 +94,6 @@ export type Database = {
           p_ciclo: number | null
           p_fecha?: string
           p_ip?: string | null
-          p_hora?: number | null
-          p_minuto?: number | null
         }
         Returns: string
       }

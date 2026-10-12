@@ -13,7 +13,7 @@ import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
 import {
   PROGRAMAS,
-  TURNO,
+  TURNO_TEXTO,
   aplicaCiclo,
   ciclosDe,
   formatearFecha,
@@ -34,10 +34,6 @@ type Bloqueo = {
   detalle?: ReactNode
   pie?: string
 }
-
-const HORA_INICIO = 8
-const HORA_FIN = 8
-const MINUTO_FIN = 30
 
 export function Registro() {
   const { sesion, cargando, correo } = useAuth()
@@ -120,7 +116,6 @@ const [ahora, setAhora] = useState(() => new Date())
     const mensaje = fallo instanceof Error ? fallo.message : ''
     if (mensaje === 'Faltan campos obligatorios') return
     if (mensaje === 'IP_YA_REGISTRADA') return
-    if (fallo instanceof Error && fallo.message.includes('FUERA_DE_HORARIO')) return
     setAviso({ mensaje: 'No se pudo guardar la asistencia. Inténtalo otra vez.', tipo: 'error' })
   }, [])
 
@@ -191,40 +186,11 @@ const [ahora, setAhora] = useState(() => new Date())
       throw new Error('Faltan campos obligatorios')
     }
 
+    // La fecha y hora se toman al momento de registrar.
     const fechaISO = new Date().toISOString()
     const nombreLimpio = nombres.trim()
     const apellidoLimpio = apellidos.trim()
     const cicloFinal = aplicaCiclo(programa) ? Number(ciclo) : null
-
-    // Ventana unica: de 8:00 a 8:30 segun el reloj del dispositivo.
-    const ahora = new Date()
-    const horaDispositivo = ahora.getHours()
-    const minutoDispositivo = ahora.getMinutes()
-    const dentroDeHorario =
-      (horaDispositivo === HORA_INICIO || horaDispositivo === HORA_FIN) &&
-      minutoDispositivo < MINUTO_FIN
-
-    if (!dentroDeHorario) {
-      setBloqueo({
-        titulo: 'Fuera del horario de registro',
-        descripcion: 'La asistencia solo se puede marcar de 8:00 a 8:30 de la mañana. Vuelve a entrar en ese horario.',
-        detalle: (
-          <>
-            <span className="block text-xs tracking-[0.18em] text-perla-400 uppercase">
-              Hora de tu dispositivo
-            </span>
-            <span className="mt-1 block font-mono text-2xl text-oro-400">
-              {formatearFecha(ahora)}
-            </span>
-            <span className="mt-2 block text-xs text-perla-300">
-              Ventana de registro: 8:00 – 8:30
-            </span>
-          </>
-        ),
-        pie: 'Si tu reloj está desfasado, corrígelo antes de volver a intentar.',
-      })
-      throw new Error('FUERA_DE_HORARIO')
-    }
 
     const ip = await obtenerIpPublica()
 
@@ -233,11 +199,8 @@ const [ahora, setAhora] = useState(() => new Date())
       p_apellidos: apellidoLimpio,
       p_programa: programa as Programa,
       p_ciclo: cicloFinal,
-      p_turno: TURNO,
       p_fecha: fechaISO,
       p_ip: ip,
-      p_hora: horaDispositivo,
-      p_minuto: minutoDispositivo,
     })
 
     if (error) {
@@ -254,14 +217,6 @@ const [ahora, setAhora] = useState(() => new Date())
           pie: 'Si crees que es un error, comunícate con el coordinador de la institución.',
         })
         throw new Error('IP_YA_REGISTRADA')
-      }
-      if (/FUERA_DE_HORARIO/.test(error.message)) {
-        setBloqueo({
-          titulo: 'Fuera del horario de registro',
-          descripcion:
-            'La asistencia solo se puede marcar de 8:00 a 8:30 de la mañana. Vuelve a entrar en ese horario.',
-        })
-        throw error
       }
       if (/CAMPOS_OBLIGATORIOS/.test(error.message)) {
         setAviso({ mensaje: 'Completa todos los campos obligatorios.', tipo: 'error' })
@@ -455,11 +410,11 @@ const [ahora, setAhora] = useState(() => new Date())
                 name="turno"
                 type="text"
                 readOnly
-                value="Un solo turno"
+                value={TURNO_TEXTO}
                 className="campo cursor-not-allowed bg-ink-950 text-perla-300"
               />
               <p className="mt-1.5 text-xs text-perla-400">
-                La institución tiene un solo turno. El registro se abre de 8:00 a 8:30.
+                Turno único: Tarde y Mañana. Ambos turnos asisten por la mañana.
               </p>
             </Campo>
 
@@ -487,7 +442,7 @@ const [ahora, setAhora] = useState(() => new Date())
                 </svg>
               </div>
               <p className="mt-1.5 text-xs text-perla-400">
-                Se registra automáticamente al enviar.
+                Se toma automáticamente al momento de registrar.
               </p>
             </Campo>
 

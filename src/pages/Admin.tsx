@@ -348,7 +348,7 @@ export function Admin() {
         </section>
 
         <p className="mt-6 text-center text-xs text-perla-400">
-          El registro solo se habilita de 8:00 a 8:30 y una vez por practicante.
+          El registro es una sola vez por practicante y una sola vez por dispositivo.
         </p>
       </div>
     </div>

@@ -14,11 +14,15 @@ asistencia de los practicantes de una Institución Educativa.
 4. **Formulario** — nombres, apellidos, programa/rol, ciclo, turno y fecha y hora
    automáticas, más la casilla obligatoria «Asistió y marcó».
 
-   | Programa / Rol | Ciclos           |
-   | -------------- | ---------------- |
-   | SENATI         | 1 al 6           |
-   | UCV            | 1 al 10          |
-   | Docente API    | no aplica        |
+| Programa / Rol | Ciclos           |
+| -------------- | ---------------- |
+| SENATI         | 1 al 6           |
+| UCV            | 1 al 10          |
+| Docente API    | no aplica        |
+
+El turno es único: **Tarde y Mañana** (ambos asisten por la mañana). No hay restricción de
+hora: se puede marcar a cualquier momento y la fecha y hora se toman automáticamente al
+registrar.
 5. **Diapositiva de confirmación** — para registrar hay que arrastrar el control
    **«Desliza para registrar»** hasta el extremo (o con las flechas del teclado y `Fin`).
    Muestra el spinner mientras guarda y un check dorado al terminar.
@@ -34,19 +38,16 @@ El bloqueo se aplica **en la base de datos**, no en el navegador: aunque el prac
 otra cuenta con otro correo o abra la página en otro navegador, desde la misma conexión solo
 se acepta un registro.
 
-1. Ejecuta `supabase/ip-unica.sql` en el SQL Editor.
+1. Ejecuta `supabase/turno-unico.sql` en el SQL Editor.
 2. El navegador obtiene la IP pública (`api.ipify.org`, 4 s de espera) y la envía a la función
    `registrar_asistencia()`.
 3. La función guarda la IP en `public.registros_ip`; si ya existe, lanza `IP_YA_REGISTRADA`
    y sale un **modal rojo** con la palabra **ERROR** en `FuzzyText` y la IP usada.
 
-### Horario por turno
+### Horario
 
-El **turno Tarde** solo puede marcar a partir de las **12:00**, usando la hora del
-dispositivo (`new Date().getHours()`). Si alguien selecciona Tarde antes de las 12, el
-registro se rechaza en el navegador y también en la base de datos (la función recibe
-`p_hora` y lanza `FUERA_DE_HORARIO`). El modal explica la regla y muestra la hora actual del
-equipo.
+No hay restricción de hora. La fecha y hora se toman automáticamente en el momento del
+registro, sin importar el turno ni la franja del día.
 
 ### Recomendacion para el bloqueo por IP
 
@@ -184,7 +185,6 @@ src/
   pages/SinConfigurar.tsx        aviso si falta el .env
 supabase/schema.sql                script de creación de tablas
 supabase/migracion-programas.sql   migración de ciclos I-IV a programas SENATI/UCV/Docente API
-supabase/ip-unica.sql              bloqueo de un registro por IP
-supabase/un-solo-turno.sql          unico turno Tarde
+supabase/turno-unico.sql           turno único + un solo registro
 supabase/admin.sql                 panel de administrador
 ```
