@@ -17,12 +17,12 @@ import {
   ciclosDe,
   formatearFecha,
   textoPrograma,
-  textoTurno,
 } from '../lib/constantes'
 import { borrarCuentaPendiente } from '../lib/cuentaPendiente'
 import { obtenerIpPublica } from '../lib/ip'
 import { supabase } from '../lib/supabase'
-import type { Asistencia, Programa, Turno } from '../lib/types'
+import { limpiarNombre, validarNombre } from '../lib/validacion'
+import type { Programa, Turno } from '../lib/types'
 
 type Errores = Partial<
   Record<'nombres' | 'apellidos' | 'programa' | 'ciclo' | 'turno' | 'asistio', string>
@@ -74,12 +74,18 @@ function Formulario({ uid }: { uid: string }) {
       : null,
   )
 const [ahora, setAhora] = useState(() => new Date())
-  const [historial, setHistorial] = useState<Asistencia[]>([])
+  const [yaRegistro, setYaRegistro] = useState(false)
   const [celebracion, setCelebracion] = useState<{ nombre: string; programa: string } | null>(null)
   const [bloqueo, setBloqueo] = useState<Bloqueo | null>(null)
 
-  const cerrarCelebracion = useCallback(() => setCelebracion(null), [])
   const cerrarBloqueo = useCallback(() => setBloqueo(null), [])
+
+  // Al cerrar el modal de "asistencia registrada" se cierra la sesion
+  // y el practicante vuelve al inicio (pantalla de acceso).
+  const cerrarCelebracionYSalir = useCallback(() => {
+    setCelebracion(null)
+    void salir()
+  }, [salir])
 
   const cajaSlider = useRef<HTMLDivElement>(null)
   const [anchoSlider, setAnchoSlider] = useState(320)
@@ -118,9 +124,8 @@ const [ahora, setAhora] = useState(() => new Date())
   const consultarHistorial = useCallback(async () => {
     const { data } = await supabase
       .from('asistencias')
-      .select('*')
-      .order('fecha', { ascending: false })
-      .limit(5)
+      .select('id')
+      .limit(1)
     return data ?? []
   }, [])
 
@@ -128,7 +133,7 @@ const [ahora, setAhora] = useState(() => new Date())
     let activo = true
     ;(async () => {
       const registros = await consultarHistorial()
-      if (activo) setHistorial(registros)
+      if (activo && registros.length > 0) setYaRegistro(true)
     })()
     return () => {
       activo = false
@@ -161,14 +166,19 @@ const [ahora, setAhora] = useState(() => new Date())
 
   function validar(): Errores {
     const nuevos: Errores = {}
-    if (nombres.trim().length < 2) nuevos.nombres = 'Ingresa tus nombres (mínimo 2 letras).'
-    if (apellidos.trim().length < 2)
-      nuevos.apellidos = 'Ingresa tus apellidos (mínimo 2 letras).'
+
+    const errorNombres = validarNombre(nombres)
+    if (errorNombres) nuevos.nombres = errorNombres
+
+    const errorApellidos = validarNombre(apellidos)
+    if (errorApellidos) nuevos.apellidos = errorApellidos
+
     if (!programa) nuevos.programa = 'Selecciona tu programa.'
     if (programa && aplicaCiclo(programa) && ciclo === '')
       nuevos.ciclo = 'Selecciona tu ciclo.'
     if (!turno) nuevos.turno = 'Selecciona tu turno.'
     if (!asistio) nuevos.asistio = 'Debes marcar la asistencia para registrar.'
+
     return nuevos
   }
 
@@ -261,7 +271,7 @@ const [ahora, setAhora] = useState(() => new Date())
     }
 
     setAsistio(false)
-    setHistorial(await consultarHistorial())
+    setYaRegistro(true)
     setAviso({ mensaje: `Asistencia registrada ${nombreLimpio}`, tipo: 'exito' })
     setCelebracion({
       nombre: `${nombreLimpio} ${apellidoLimpio}`,
@@ -284,12 +294,22 @@ const [ahora, setAhora] = useState(() => new Date())
         <ModalBloqueo visible {...bloqueo} onCerrar={cerrarBloqueo} />
       )}
 
+      {yaRegistro && !celebracion && !bloqueo && (
+        <ModalBloqueo
+          visible
+          titulo="Ya tienes tu asistencia registrada"
+          descripcion="Solo se puede registrar una vez. Tu registro ya está guardado, por lo que el formulario ya no está disponible."
+          pie="Si crees que se trata de un error, comunícate con el coordinador de la institución."
+          onCerrar={() => void salir()}
+        />
+      )}
+
       {celebracion && (
         <CelebracionRegistro
           visible
           nombre={celebracion.nombre}
           programa={celebracion.programa}
-          onCerrar={cerrarCelebracion}
+          onCerrar={cerrarCelebracionYSalir}
         />
       )}
 
@@ -337,8 +357,15 @@ const [ahora, setAhora] = useState(() => new Date())
                 name="nombres"
                 type="text"
                 required
+                minLength={2}
+                maxLength={60}
+                autoComplete="given-name"
                 value={nombres}
-                onChange={(e) => setNombres(e.target.value)}
+                onChange={(e) => setNombres(limpiarNombre(e.target.value))}
+                onBlur={() => {
+                  const error = validarNombre(nombres)
+                  setErrores((previos) => ({ ...previos, nombres: error ?? undefined }))
+                }}
                 placeholder="Juan Carlos"
                 className={claseCampo(Boolean(errores.nombres))}
               />
@@ -350,8 +377,15 @@ const [ahora, setAhora] = useState(() => new Date())
                 name="apellidos"
                 type="text"
                 required
+                minLength={2}
+                maxLength={60}
+                autoComplete="family-name"
                 value={apellidos}
-                onChange={(e) => setApellidos(e.target.value)}
+                onChange={(e) => setApellidos(limpiarNombre(e.target.value))}
+                onBlur={() => {
+                  const error = validarNombre(apellidos)
+                  setErrores((previos) => ({ ...previos, apellidos: error ?? undefined }))
+                }}
                 placeholder="Quispe Huamán"
                 className={claseCampo(Boolean(errores.apellidos))}
               />
@@ -508,34 +542,6 @@ const [ahora, setAhora] = useState(() => new Date())
             </p>
           </div>
         </form>
-
-        {historial.length > 0 && (
-          <section className="panel mt-6 rounded-xl p-6">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Mis últimos registros
-            </h2>
-            <div className="mt-3">
-              <Ornamento />
-            </div>
-            <ul className="mt-4 divide-y divide-ink-700">
-              {historial.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                  <span className="text-perla-100">
-                    {item.nombres} {item.apellidos}
-                    <span className="block text-xs text-perla-400">
-                      {textoPrograma(item.programa)}
-                      {item.ciclo !== null && ` · Ciclo ${item.ciclo}`} ·{' '}
-                      {textoTurno(item.turno)} · Asistió
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-right text-xs text-perla-300">
-                    {formatearFecha(item.fecha)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         <p className="mt-6 text-center text-xs text-perla-400">
           Todos los campos son obligatorios

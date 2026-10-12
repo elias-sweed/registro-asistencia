@@ -75,11 +75,12 @@ export function CelebracionRegistro({
         <div className="mt-5 h-px w-24 mx-auto bg-gradient-to-r from-transparent via-oro-500 to-transparent" />
 
         <p className="mt-4 text-xs text-perla-400">
-          Mueve el cursor sobre las letras y haz clic para ver la onda.
+          Al salir se cerrará tu sesión. Mueve el cursor sobre las letras y haz clic para ver la
+          onda.
         </p>
 
         <button type="button" onClick={onCerrar} className="boton-oro mt-5">
-          Volver al formulario
+          Salir y volver al inicio
         </button>
       </div>
     </div>

@@ -7,10 +7,9 @@ import { FondoRayos } from '../components/FondoRayos'
 import { useAuth } from '../context/authContext'
 import { borrarCuentaPendiente, guardarCuentaPendiente } from '../lib/cuentaPendiente'
 import { supabase } from '../lib/supabase'
+import { validarClave, validarCorreo } from '../lib/validacion'
 
 type Modo = 'ingresar' | 'registrar'
-
-const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export function Login() {
   const { sesion, cargando } = useAuth()
@@ -45,12 +44,15 @@ export function Login() {
     evento.preventDefault()
     setError('')
 
-    if (!CORREO_VALIDO.test(correo.trim())) {
-      setError('Ingresa un correo electrónico válido.')
+    const errorCorreo = validarCorreo(correo)
+    if (errorCorreo) {
+      setError(errorCorreo)
       return
     }
-    if (clave.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.')
+
+    const errorClave = validarClave(clave)
+    if (errorClave) {
+      setError(errorClave)
       return
     }
 

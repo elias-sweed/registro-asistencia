@@ -21,6 +21,12 @@ comment on table public.registros_ip is 'Una fila por IP: impide un segundo regi
 create index if not exists registros_ip_practicante_idx
   on public.registros_ip (practicante_id);
 
+-- Un mismo practicante (mismo correo) tampoco puede registrar dos veces,
+-- aunque cambie de IP o de dispositivo.
+create unique index if not exists registros_ip_usuario_unico
+  on public.registros_ip (practicante_id)
+  where practicante_id is not null;
+
 -- 2) RLS: nadie escribe directo, solo la funcion de abajo ------
 alter table public.registros_ip enable row level security;
 
@@ -104,7 +110,11 @@ begin
     v_ip := 'usuario:' || v_uid::text;
   end if;
 
-  -- d) Una sola vez por IP
+  -- d) Una sola vez: por IP y por practicante (correo)
+  if exists (select 1 from public.registros_ip where practicante_id = v_uid) then
+    raise exception 'IP_YA_REGISTRADA';
+  end if;
+
   begin
     insert into public.registros_ip (ip, correo, practicante_id)
     values (v_ip, v_correo, v_uid);
