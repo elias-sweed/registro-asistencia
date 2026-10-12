@@ -93,7 +93,6 @@ export type Database = {
           p_programa: Programa
           p_ciclo: number | null
           p_fecha?: string
-          p_ip?: string | null
         }
         Returns: string
       }

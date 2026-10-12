@@ -32,39 +32,26 @@ registrar.
    fuera.
 7. **Toast** — al guardar aparece `Asistencia registrada {nombres}`.
 
-## Una sola asistencia por dispositivo
+## Una sola asistencia por cuenta y navegador
 
-El bloqueo se aplica **en la base de datos**, no en el navegador: aunque el practicante cree
-otra cuenta con otro correo o abra la página en otro navegador, desde la misma conexión solo
-se acepta un registro.
+La asistencia se registra **una sola vez**. No hay bloqueo por IP: varios practicantes
+compartiendo el mismo wifi pueden marcar sin problema.
 
-1. Ejecuta `supabase/turno-unico.sql` en el SQL Editor.
-2. El navegador obtiene la IP pública (`api.ipify.org`, 4 s de espera) y la envía a la función
-   `registrar_asistencia()`.
-3. La función guarda la IP en `public.registros_ip`; si ya existe, lanza `IP_YA_REGISTRADA`
-   y sale un **modal rojo** con la palabra **ERROR** en `FuzzyText` y la IP usada.
+1. Ejecuta `supabase/por-cuenta.sql` en el SQL Editor. Crea `public.registros_realizados`
+   con una fila por cuenta y **migra los registros que ya existían**.
+2. La función `registrar_asistencia()` valida contra esa tabla y lanza `YA_REGISTRADO` si la
+   cuenta ya marcó.
+3. En el navegador, `localStorage` guarda que ese navegador ya registró, así que el
+   formulario se bloquea al instante.
+
+Cuando el bloqueo se activa (por navegador o porque la cuenta ya tiene registro en la base,
+aunque entres desde otro navegador) aparece un **modal rojo con la palabra ERROR** y el botón
+**Volver al inicio** cierra la sesión y regresa al login.
 
 ### Horario
 
 No hay restricción de hora. La fecha y hora se toman automáticamente en el momento del
 registro, sin importar el turno ni la franja del día.
-
-### Recomendacion para el bloqueo por IP
-
-La clave es la IP, no el dispositivo. En la práctica:
-
-- **Datos móviles** → cada celular tiene IP propia, funciona bien.
-- **Wi-Fi del colegio** → varios practicantes comparten IP y solo uno podría registrar.
-
-Si ese es tu caso, lo más limpio es una **tabla de IPs de la institución exentas** del
-bloqueo, en vez de cambiar la clave por `ip + correo` (que sí se puede esquivar cambiando de
-correo).
-
-> **Atención:** la clave es la IP, no el dispositivo. Varios practicantes detrás del mismo
-> router (mismo laboratorio o el mismo wifi del colegio) comparten IP, y solo uno podría
-> registrar. Si en tu institución elaluzgar por red es el caso, hay que cambiar la clave de
-> `registros_ip` (por ejemplo a `ip + correo`) o pasar la detección a una Edge Function con
-> huellas del navegador.
 
 Todos los campos son obligatorios y se validan en el cliente y en la base de datos.
 
@@ -185,6 +172,6 @@ src/
   pages/SinConfigurar.tsx        aviso si falta el .env
 supabase/schema.sql                script de creación de tablas
 supabase/migracion-programas.sql   migración de ciclos I-IV a programas SENATI/UCV/Docente API
-supabase/turno-unico.sql           turno único + un solo registro
+supabase/por-cuenta.sql            un solo registro por cuenta (sin bloqueo por IP)
 supabase/admin.sql                 panel de administrador
 ```

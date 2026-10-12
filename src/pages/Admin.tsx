@@ -348,7 +348,7 @@ export function Admin() {
         </section>
 
         <p className="mt-6 text-center text-xs text-perla-400">
-          El registro es una sola vez por practicante y una sola vez por dispositivo.
+          El registro es una sola vez por practicante y por navegador.
         </p>
       </div>
     </div>

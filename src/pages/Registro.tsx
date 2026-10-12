@@ -11,6 +11,8 @@ import { Toast } from '../components/Toast'
 import type { ToastTipo } from '../components/Toast'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
+import { marcarRegistroHecho, navegadorRegistrado } from '../lib/bloqueo'
+import { supabase } from '../lib/supabase'
 import {
   PROGRAMAS,
   TURNO_TEXTO,
@@ -19,8 +21,6 @@ import {
   formatearFecha,
   textoPrograma,
 } from '../lib/constantes'
-import { obtenerIpPublica } from '../lib/ip'
-import { supabase } from '../lib/supabase'
 import { limpiarNombre, validarNombre } from '../lib/validacion'
 import type { Programa } from '../lib/types'
 
@@ -66,7 +66,7 @@ function PantallaCarga() {
 }
 
 function Formulario({ uid }: { uid: string }) {
-  const { salir } = useAuth()
+  const { correo, salir } = useAuth()
 
   const [bienvenida, setBienvenida] = useState(true)
   const [nombres, setNombres] = useState('')
@@ -77,7 +77,7 @@ function Formulario({ uid }: { uid: string }) {
   const [errores, setErrores] = useState<Errores>({})
   const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(null)
 const [ahora, setAhora] = useState(() => new Date())
-  const [yaRegistro, setYaRegistro] = useState(false)
+  const [yaRegistro, setYaRegistro] = useState(() => navegadorRegistrado() !== null)
   const [celebracion, setCelebracion] = useState<{ nombre: string; programa: string } | null>(null)
   const [bloqueo, setBloqueo] = useState<Bloqueo | null>(null)
 
@@ -115,10 +115,13 @@ const [ahora, setAhora] = useState(() => new Date())
   const detalleErrorSlider = useCallback((fallo: unknown) => {
     const mensaje = fallo instanceof Error ? fallo.message : ''
     if (mensaje === 'Faltan campos obligatorios') return
-    if (mensaje === 'IP_YA_REGISTRADA') return
+    if (mensaje === 'YA_REGISTRADO') return
     setAviso({ mensaje: 'No se pudo guardar la asistencia. Inténtalo otra vez.', tipo: 'error' })
   }, [])
 
+  // 1) Si este navegador ya registro, el estado inicial ya viene bloqueado.
+  // 2) Y tambien si la cuenta ya tiene registro en la base de datos,
+  //    aunque se entre desde otro navegador.
   const consultarHistorial = useCallback(async () => {
     const { data } = await supabase
       .from('asistencias')
@@ -131,7 +134,10 @@ const [ahora, setAhora] = useState(() => new Date())
     let activo = true
     ;(async () => {
       const registros = await consultarHistorial()
-      if (activo && registros.length > 0) setYaRegistro(true)
+      if (activo && registros.length > 0) {
+        marcarRegistroHecho('')
+        setYaRegistro(true)
+      }
     })()
     return () => {
       activo = false
@@ -192,31 +198,19 @@ const [ahora, setAhora] = useState(() => new Date())
     const apellidoLimpio = apellidos.trim()
     const cicloFinal = aplicaCiclo(programa) ? Number(ciclo) : null
 
-    const ip = await obtenerIpPublica()
-
     const { error } = await supabase.rpc('registrar_asistencia', {
       p_nombres: nombreLimpio,
       p_apellidos: apellidoLimpio,
       p_programa: programa as Programa,
       p_ciclo: cicloFinal,
       p_fecha: fechaISO,
-      p_ip: ip,
     })
 
     if (error) {
-      if (/IP_YA_REGISTRADA/.test(error.message)) {
-        setBloqueo({
-          titulo: 'Solo se puede registrar una vez',
-          descripcion:
-            'Desde este dispositivo ya se registró una asistencia. No es posible volver a marcar, aunque se cree otra cuenta o se abra desde otro navegador.',
-          detalle: (
-            <span className="font-mono text-xs">
-              IP del dispositivo: <span className="text-oro-400">{ip ?? 'no detectada'}</span>
-            </span>
-          ),
-          pie: 'Si crees que es un error, comunícate con el coordinador de la institución.',
-        })
-        throw new Error('IP_YA_REGISTRADA')
+      if (/YA_REGISTRADO/.test(error.message)) {
+        marcarRegistroHecho(correo)
+        setYaRegistro(true)
+        throw new Error('YA_REGISTRADO')
       }
       if (/CAMPOS_OBLIGATORIOS/.test(error.message)) {
         setAviso({ mensaje: 'Completa todos los campos obligatorios.', tipo: 'error' })
@@ -232,6 +226,7 @@ const [ahora, setAhora] = useState(() => new Date())
 
     setAsistio(false)
     setYaRegistro(true)
+    marcarRegistroHecho(correo)
     setAviso({ mensaje: `Asistencia registrada ${nombreLimpio}`, tipo: 'exito' })
     setCelebracion({
       nombre: `${nombreLimpio} ${apellidoLimpio}`,
@@ -258,15 +253,15 @@ const [ahora, setAhora] = useState(() => new Date())
         <ModalBloqueo
           visible
           titulo="Ya registraste tu asistencia"
-          descripcion="La asistencia se registra una sola vez por cuenta y una sola vez por dispositivo. Tu registro ya está guardado, así que el formulario queda bloqueado."
+          descripcion="La asistencia se registra una sola vez. Tu registro ya está guardado, así que el formulario queda bloqueado."
           detalle={
             <span className="text-xs">
-              No se puede volver a marcar con esta cuenta ni creando una cuenta nueva desde el
-              mismo dispositivo.
+              No se puede volver a marcar con esta cuenta, aunque entres desde otro navegador o
+              inicies sesión otra vez.
             </span>
           }
           pie="Si crees que se trata de un error, comunícate con el coordinador de la institución."
-          textoBoton="Salir del sistema"
+          textoBoton="Volver al inicio"
           onCerrar={() => void salir()}
         />
       )}
