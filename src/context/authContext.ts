@@ -5,7 +5,6 @@ export type AuthContextValue = {
   sesion: Session | null
   cargando: boolean
   correo: string
-  recienConfirmada: boolean
   salir: () => Promise<void>
 }
 

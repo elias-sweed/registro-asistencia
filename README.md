@@ -7,10 +7,9 @@ asistencia de los practicantes de una Institución Educativa.
 
 1. **Login** — se exige correo electrónico y contraseña (con botón para ver/ocultar la clave).
    Si es la primera vez, se crea la cuenta.
-2. **Confirmación por correo** — al crear la cuenta se guarda el correo y la contraseña en la
-   pestaña y se muestra la pantalla «¡Cuenta creada!» con el enlace que llegó a Gmail.
-   Al confirmar el correo, Supabase devuelve al usuario a la aplicación ya con la sesión iniciada.
-3. **Modal de bienvenida** — al entrar se muestra un modal de carga con «¡Que tengas excelente día!»
+2. **Ingreso** — la cuenta se crea con correo, contraseña y repetir contraseña. No hay
+   confirmación por correo: al crear la cuenta ya entra al sistema.
+3. **Modal de bienvenida** — al entrar se muestra un modal de carga con un tablero de letras
    por ~2.6 s.
 4. **Formulario** — nombres, apellidos, programa/rol, ciclo, turno y fecha y hora
    automáticas, más la casilla obligatoria «Asistió y marcó».
@@ -27,8 +26,7 @@ asistencia de los practicantes de una Institución Educativa.
    (WebGL, se inclina hacia el cursor, se desarma al pasar por encima y hace ondas al hacer
    clic), el nombre del practicante y el programa. Se cierra a los 7 s, con `Esc` o al pulsar
    fuera.
-7. **Toast** — al guardar aparece `Asistencia registrada {nombres}`. Tras confirmar la cuenta
-   por correo se muestra además `¡Cuenta creada con éxito! Bienvenido {correo}`.
+7. **Toast** — al guardar aparece `Asistencia registrada {nombres}`.
 
 ## Una sola asistencia por dispositivo
 
@@ -129,12 +127,15 @@ sus propios registros.
 
 **Supabase → Authentication → Providers → Email**:
 
-- Deja activado **«Confirm email»** para que el practicante valide su cuenta desde Gmail.
-- Configura un SMTP propio (opcional pero recomendado) para que los correos no lleguen al
-  buzón de pruebas de Supabase, que solo permite unos pocos envíos por hora.
+- **Desactiva «Confirm email»**. Así la cuenta queda activa al instante al crearla, sin
+  enviar correos (el SMTP por defecto de Supabase tiene un límite de envíos por hora y
+  termina mostrando «demasiados intentos»).
 
-En **Authentication → URL Configuration** agrega `http://localhost:5173` en *Site URL* y en
-*Redirect URLs*: así, al confirmar el correo desde Gmail el usuario vuelve a la aplicación.
+El registro es solo **correo + contraseña + repetir contraseña**. No hay correo de
+confirmación, ni enlace, ni pantalla de espera.
+
+En **Authentication → URL Configuration** agrega tu dominio en *Redirect URLs*
+(por ejemplo `https://tu-app.vercel.app/**`).
 
 ### 2.2 Variables de entorno
 
@@ -179,8 +180,7 @@ src/
   components/SlideCommit.tsx    control deslizante de confirmación (React Bits)
   components/Toast.tsx           notificaciones
   context/                       sesión de Supabase
-  lib/cuentaPendiente.ts         cuenta recién creada por confirmar
-  lib/                           cliente Supabase, tipos y constantes
+  lib/                           cliente Supabase, validacion y constantes
   pages/Login.tsx                acceso con correo y contraseña
   pages/Registro.tsx             formulario de asistencia
   pages/SinConfigurar.tsx        aviso si falta el .env

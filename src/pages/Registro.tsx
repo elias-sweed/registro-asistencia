@@ -20,7 +20,6 @@ import {
   formatearFecha,
   textoPrograma,
 } from '../lib/constantes'
-import { borrarCuentaPendiente } from '../lib/cuentaPendiente'
 import { obtenerIpPublica } from '../lib/ip'
 import { supabase } from '../lib/supabase'
 import { limpiarNombre, validarNombre } from '../lib/validacion'
@@ -72,7 +71,7 @@ function PantallaCarga() {
 }
 
 function Formulario({ uid }: { uid: string }) {
-  const { correo, recienConfirmada, salir } = useAuth()
+  const { correo, salir } = useAuth()
 
   const [bienvenida, setBienvenida] = useState(true)
   const [nombres, setNombres] = useState('')
@@ -81,14 +80,7 @@ function Formulario({ uid }: { uid: string }) {
   const [ciclo, setCiclo] = useState<number | ''>('')
   const [asistio, setAsistio] = useState(false)
   const [errores, setErrores] = useState<Errores>({})
-  const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(() =>
-    recienConfirmada
-      ? {
-          mensaje: `¡Cuenta creada con éxito! Bienvenido ${correo}. Ya puedes registrar tu asistencia.`,
-          tipo: 'exito',
-        }
-      : null,
-  )
+  const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(null)
 const [ahora, setAhora] = useState(() => new Date())
   const [yaRegistro, setYaRegistro] = useState(false)
   const [celebracion, setCelebracion] = useState<{ nombre: string; programa: string } | null>(null)
@@ -122,10 +114,6 @@ const [ahora, setAhora] = useState(() => new Date())
     const id = window.setInterval(() => setAhora(new Date()), 1000)
     return () => window.clearInterval(id)
   }, [])
-
-  useEffect(() => {
-    if (recienConfirmada) borrarCuentaPendiente()
-  }, [recienConfirmada])
 
   const cerrarBienvenida = useCallback(() => setBienvenida(false), [])
   const cerrarAviso = useCallback(() => setAviso(null), [])
