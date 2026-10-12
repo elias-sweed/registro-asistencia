@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { Admin } from './pages/Admin'
 import { Login } from './pages/Login'
 import { Registro } from './pages/Registro'
 import { SinConfigurar } from './pages/SinConfigurar'
@@ -10,6 +11,8 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/login/admin" element={<Admin />} />
+      <Route path="/admin" element={<Admin />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

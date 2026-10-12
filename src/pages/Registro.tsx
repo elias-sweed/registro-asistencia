@@ -10,6 +10,7 @@ import SlideCommit from '../components/SlideCommit'
 import { Toast } from '../components/Toast'
 import type { ToastTipo } from '../components/Toast'
 import { useAuth } from '../context/authContext'
+import { esAdministrador } from '../lib/admin'
 import {
   PROGRAMAS,
   TURNO,
@@ -36,13 +37,28 @@ type Bloqueo = {
   pie?: string
 }
 
-const HORA_APERTURA = 12
+const HORA_INICIO = 8
+const HORA_FIN = 8
+const MINUTO_FIN = 15
 
 export function Registro() {
-  const { sesion, cargando } = useAuth()
+  const { sesion, cargando, correo } = useAuth()
+  const [esAdmin, setEsAdmin] = useState(false)
+
+  useEffect(() => {
+    if (!sesion) return
+    let vivo = true
+    esAdministrador(correo).then((ok) => {
+      if (vivo) setEsAdmin(ok)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [sesion, correo])
 
   if (cargando) return <PantallaCarga />
   if (!sesion) return <Navigate to="/login" replace />
+  if (esAdmin) return <Navigate to="/login/admin" replace />
 
   return <Formulario uid={sesion.user.id} />
 }
@@ -193,14 +209,18 @@ const [ahora, setAhora] = useState(() => new Date())
     const apellidoLimpio = apellidos.trim()
     const cicloFinal = aplicaCiclo(programa) ? Number(ciclo) : null
 
-    // Hora del dispositivo: el registro se abre desde las 12:00.
+    // Ventana unica: de 8:00 a 8:15 segun el reloj del dispositivo.
     const ahora = new Date()
     const horaDispositivo = ahora.getHours()
+    const minutoDispositivo = ahora.getMinutes()
+    const dentroDeHorario =
+      (horaDispositivo === HORA_INICIO || horaDispositivo === HORA_FIN) &&
+      minutoDispositivo < MINUTO_FIN
 
-    if (horaDispositivo < HORA_APERTURA) {
+    if (!dentroDeHorario) {
       setBloqueo({
-        titulo: 'Todavía no es la hora',
-        descripcion: `La asistencia del turno ${TURNO_TEXTO} se registra a partir de las 12:00 del mediodía. Vuelve a entrar a esta hora para marcar.`,
+        titulo: 'Fuera del horario de registro',
+        descripcion: `La asistencia solo se puede marcar de 8:00 a 8:15 de la mañana. Vuelve a entrar en ese horario.`,
         detalle: (
           <>
             <span className="block text-xs tracking-[0.18em] text-perla-400 uppercase">
@@ -210,7 +230,7 @@ const [ahora, setAhora] = useState(() => new Date())
               {formatearFecha(ahora)}
             </span>
             <span className="mt-2 block text-xs text-perla-300">
-              El registro se habilita desde las 12:00.
+              Ventana de registro: 8:00 – 8:15
             </span>
           </>
         ),
@@ -230,6 +250,7 @@ const [ahora, setAhora] = useState(() => new Date())
       p_fecha: fechaISO,
       p_ip: ip,
       p_hora: horaDispositivo,
+      p_minuto: minutoDispositivo,
     })
 
     if (error) {
@@ -249,8 +270,9 @@ const [ahora, setAhora] = useState(() => new Date())
       }
       if (/FUERA_DE_HORARIO/.test(error.message)) {
         setBloqueo({
-          titulo: 'Todavía no es la hora',
-          descripcion: `La asistencia del turno ${TURNO_TEXTO} se registra a partir de las 12:00 del mediodía. Vuelve a entrar a esa hora.`,
+          titulo: 'Fuera del horario de registro',
+          descripcion:
+            'La asistencia solo se puede marcar de 8:00 a 8:15 de la mañana. Vuelve a entrar en ese horario.',
         })
         throw error
       }
@@ -443,7 +465,7 @@ const [ahora, setAhora] = useState(() => new Date())
                 className="campo cursor-not-allowed bg-ink-950 text-perla-300"
               />
               <p className="mt-1.5 text-xs text-perla-400">
-                La institución tiene un solo turno. El registro se abre a las 12:00.
+                La institución tiene un solo turno. El registro se abre de 8:00 a 8:15.
               </p>
             </Campo>
 

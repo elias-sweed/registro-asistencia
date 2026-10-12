@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { CampoClave } from '../components/CampoClave'
 import { Escudo, Ornamento } from '../components/Escudo'
 import { FondoRayos } from '../components/FondoRayos'
 import { useAuth } from '../context/authContext'
+import { esAdministrador } from '../lib/admin'
 import { borrarCuentaPendiente, guardarCuentaPendiente } from '../lib/cuentaPendiente'
 import { supabase } from '../lib/supabase'
 import { validarClave, validarCorreo } from '../lib/validacion'
@@ -19,6 +20,20 @@ export function Login() {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [esperandoConfirmacion, setEsperandoConfirmacion] = useState<string | null>(null)
+  const [esAdmin, setEsAdmin] = useState<boolean | null>(null)
+
+  const correoSesion = sesion?.user.email ?? ''
+
+  useEffect(() => {
+    if (!sesion) return
+    let vivo = true
+    esAdministrador(correoSesion).then((ok) => {
+      if (vivo) setEsAdmin(ok)
+    })
+    return () => {
+      vivo = false
+    }
+  }, [sesion, correoSesion])
 
   if (cargando) {
     return (
@@ -28,7 +43,16 @@ export function Login() {
     )
   }
 
-  if (sesion) return <Navigate to="/registro" replace />
+  if (sesion) {
+    if (esAdmin === null) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <span className="h-9 w-9 animate-spin rounded-full border-2 border-oro-500 border-t-transparent" />
+        </div>
+      )
+    }
+    return <Navigate to={esAdmin ? '/login/admin' : '/registro'} replace />
+  }
 
   const esRegistro = modo === 'registrar'
 

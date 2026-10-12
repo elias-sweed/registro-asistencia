@@ -39,6 +39,10 @@ export const TURNO: Turno = 'TARDE'
 
 export const TURNO_TEXTO = 'Tarde'
 
+export function textoTurno(turno: Turno | null) {
+  return turno === TURNO ? TURNO_TEXTO : '-'
+}
+
 const formatoFecha = new Intl.DateTimeFormat('es', {
   dateStyle: 'long',
   timeStyle: 'short',

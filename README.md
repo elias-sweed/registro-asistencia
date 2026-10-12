@@ -69,6 +69,31 @@ correo).
 
 Todos los campos son obligatorios y se validan en el cliente y en la base de datos.
 
+## Panel de administrador
+
+`/login/admin` (también `/admin`) muestra el control de la asistencia:
+
+- **Tarjetas:** cuentas creadas, ya marcaron, sin marcar y las que marcaron hoy.
+- **Gráficos:** cuentas por programa (dona), marcando vs. sin marcar (dona), cuentas por ciclo
+  (barras) y registros por día (columnas). Todos con leyenda y porcentaje.
+- **Tabla** con filtros *Todos / Marcaron / Sin marcar*: correo, nombre, programa, ciclo,
+  estado y fecha.
+
+### Configurar el acceso
+
+1. Crea el usuario en **Supabase → Authentication → Users** (marca *Auto Confirm User*).
+2. Ejecuta `supabase/admin.sql` en el SQL Editor.
+3. Dale permisos de administrador (descomenta y edita esta línea del script):
+
+```sql
+insert into public.administradores (correo, nombre) values
+  ('tucorreo@ie.edu.pe', 'Coordinador')
+on conflict (correo) do update set activo = true, nombre = excluded.nombre;
+```
+
+Solo esos correos pueden ver el panel. Si un administrador entra por `/login` es enviado
+automáticamente al dashboard, y nunca ve el formulario de asistencia.
+
 ## Estilo
 
 Tema **negro vintage premium** con textura de papel, detalles en oro y tipografía
@@ -144,6 +169,7 @@ src/
   components/ASCIIText.tsx        texto ASCII WebGL (React Bits)
   components/CelebracionRegistro.tsx cartel al registrar
   components/FuzzyText.tsx      texto vibrador (React Bits)
+  components/Graficos.tsx      dona, barras y columnas del panel
   components/ModalBloqueo.tsx  modal rojo de error (IP repetida / fuera de horario)
   components/SplitFlapText.tsx    tablero de letras (React Bits)
   components/CampoClave.tsx      contraseña con ver/ocultar
@@ -161,4 +187,6 @@ src/
 supabase/schema.sql                script de creación de tablas
 supabase/migracion-programas.sql   migración de ciclos I-IV a programas SENATI/UCV/Docente API
 supabase/ip-unica.sql              bloqueo de un registro por IP
+supabase/un-solo-turno.sql          unico turno Tarde
+supabase/admin.sql                 panel de administrador
 ```
