@@ -127,12 +127,10 @@ sus propios registros.
 
 **Supabase → Authentication → Providers → Email**:
 
-- **Desactiva «Confirm email»**. Así la cuenta queda activa al instante al crearla, sin
-  enviar correos (el SMTP por defecto de Supabase tiene un límite de envíos por hora y
-  termina mostrando «demasiados intentos»).
+- **Desactiva «Confirm email»**. Así la cuenta queda activa al instante al crearla.
 
-El registro es solo **correo + contraseña + repetir contraseña**. No hay correo de
-confirmación, ni enlace, ni pantalla de espera.
+El registro es solo **correo + contraseña + repetir contraseña**. Sin correos, sin enlaces y
+sin pantallas de espera: al crear la cuenta el practicante entra directo al formulario.
 
 En **Authentication → URL Configuration** agrega tu dominio en *Redirect URLs*
 (por ejemplo `https://tu-app.vercel.app/**`).

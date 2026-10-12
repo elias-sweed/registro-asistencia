@@ -22,7 +22,7 @@ import {
 } from '../lib/constantes'
 import { obtenerIpPublica } from '../lib/ip'
 import { supabase } from '../lib/supabase'
-import { limpiarNombre, validarNombre } from '../lib/validacion'
+import { codigoDesdeCorreo, limpiarNombre, validarNombre } from '../lib/validacion'
 import type { Programa } from '../lib/types'
 
 type Errores = Partial<
@@ -292,7 +292,7 @@ const [ahora, setAhora] = useState(() => new Date())
 
       <BienvenidaModal
         visible={bienvenida}
-        detalle={`${correo} · preparando tu registro`}
+        detalle={`Código ${codigoDesdeCorreo(correo)} · preparando tu registro`}
         onCerrar={cerrarBienvenida}
       />
 
@@ -332,7 +332,7 @@ const [ahora, setAhora] = useState(() => new Date())
               <h1 className="font-display text-2xl leading-tight font-semibold text-perla-50">
                 Registro de Asistencia
               </h1>
-              <p className="truncate text-sm text-perla-300">{correo}</p>
+              <p className="truncate text-sm text-perla-300">Código {codigoDesdeCorreo(correo)}</p>
             </div>
           </div>
           <button

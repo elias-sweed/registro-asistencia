@@ -7,6 +7,7 @@ import type { Segmento } from '../components/Graficos'
 import { useAuth } from '../context/authContext'
 import { consultarPanel, esAdministrador } from '../lib/admin'
 import { formatearFecha, textoPrograma, textoTurno } from '../lib/constantes'
+import { codigoDesdeCorreo } from '../lib/validacion'
 import type { AdminDatos } from '../lib/types'
 
 const COLORES: Record<string, string> = {
@@ -159,7 +160,7 @@ export function Admin() {
               <h1 className="font-display text-2xl leading-tight font-semibold text-perla-50">
                 Registro de Asistencia
               </h1>
-              <p className="truncate text-sm text-perla-300">{correo}</p>
+              <p className="truncate text-sm text-perla-300">Admin: {codigoDesdeCorreo(correo)}</p>
             </div>
           </div>
           <button
@@ -290,7 +291,7 @@ export function Admin() {
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-b border-ink-700 text-perla-400">
-                  <th className="rotulo px-2 py-2">Correo</th>
+                  <th className="rotulo px-2 py-2">Código</th>
                   <th className="rotulo px-2 py-2">Practicante</th>
                   <th className="rotulo px-2 py-2">Programa</th>
                   <th className="rotulo px-2 py-2">Ciclo</th>
@@ -312,7 +313,7 @@ export function Admin() {
                   return (
                     <tr key={fila.correo} className="hover:bg-ink-850/40">
                       <td className="px-2 py-2.5 font-mono text-xs text-perla-200">
-                        {fila.correo}
+                        {codigoDesdeCorreo(fila.correo)}
                       </td>
                       <td className="px-2 py-2.5 text-perla-50">
                         {completo ? (

@@ -7,14 +7,14 @@ import { FondoRayos } from '../components/FondoRayos'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
 import { supabase } from '../lib/supabase'
-import { validarClave, validarCorreo } from '../lib/validacion'
+import { correoDesdeCodigo, validarClave, validarCodigo } from '../lib/validacion'
 
 type Modo = 'ingresar' | 'registrar'
 
 export function Login() {
   const { sesion, cargando } = useAuth()
   const [modo, setModo] = useState<Modo>('ingresar')
-  const [correo, setCorreo] = useState('')
+  const [codigo, setCodigo] = useState('')
   const [clave, setClave] = useState('')
   const [repetirClave, setRepetirClave] = useState('')
   const [error, setError] = useState('')
@@ -50,9 +50,9 @@ export function Login() {
     evento.preventDefault()
     setError('')
 
-    const errorCorreo = validarCorreo(correo)
-    if (errorCorreo) {
-      setError(errorCorreo)
+    const errorCodigo = validarCodigo(codigo)
+    if (errorCodigo) {
+      setError(errorCodigo)
       return
     }
 
@@ -68,28 +68,31 @@ export function Login() {
     }
 
     setEnviando(true)
-    const correoLimpio = correo.trim().toLowerCase()
+    const correoInterno = correoDesdeCodigo(codigo)
 
     try {
       if (esRegistro) {
         const { data, error: errorRegistro } = await supabase.auth.signUp({
-          email: correoLimpio,
+          email: correoInterno,
           password: clave,
         })
-        if (errorRegistro) throw errorRegistro
+        if (
+          errorRegistro &&
+          !/already been registered|already registered/i.test(errorRegistro.message)
+        )
+          throw errorRegistro
 
-        // Sin confirmacion de correo la sesion ya viene activa.
-        if (data.session) return
+        // Si ya existe ese codigo, se entra directamente con la misma clave.
+        if (data?.session) return
 
-        // Si el proyecto aun pide confirmar el correo, se intenta ingresar.
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
-          email: correoLimpio,
+          email: correoInterno,
           password: clave,
         })
         if (errorIngreso) throw errorIngreso
       } else {
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
-          email: correoLimpio,
+          email: correoInterno,
           password: clave,
         })
         if (errorIngreso) throw errorIngreso
@@ -122,29 +125,30 @@ export function Login() {
 
         <main className="panel rounded-xl p-7">
           <h2 className="font-display text-center text-xl font-semibold text-perla-50">
-            {esRegistro ? 'Crear cuenta de practicante' : 'Ingresar con tu correo'}
+            {esRegistro ? 'Crear cuenta de practicante' : 'Ingresar'}
           </h2>
           <p className="mt-1 text-center text-sm text-perla-300">
             {esRegistro
-              ? 'Solo tu correo y una contraseña. Tu cuenta queda activa al instante.'
-              : 'El acceso es exclusivo para practicantes registrados.'}
+              ? 'Elige tu código y una contraseña. Tu cuenta queda lista al instante.'
+              : 'Escribe tu código y contraseña para marcar tu asistencia.'}
           </p>
 
           <form onSubmit={manejarEnvio} noValidate className="mt-5 space-y-4">
             <div>
-              <label htmlFor="correo" className="rotulo mb-1.5 block">
-                Correo electrónico *
+              <label htmlFor="codigo" className="rotulo mb-1.5 block">
+                Tu código *
               </label>
               <input
-                id="correo"
-                name="correo"
-                type="email"
+                id="codigo"
+                name="codigo"
+                type="text"
                 required
-                autoComplete="email"
-                inputMode="email"
-                value={correo}
-                onChange={(e) => setCorreo(e.target.value)}
-                placeholder="practicante@ie.edu.pe"
+                minLength={3}
+                maxLength={40}
+                autoComplete="username"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+                placeholder="PE-2026"
                 className="campo"
               />
             </div>
@@ -224,14 +228,10 @@ export function Login() {
 function mensajeDeError(fallo: unknown) {
   const mensaje = fallo instanceof Error ? fallo.message : 'Ocurrió un error, inténtalo otra vez.'
 
-  if (/Invalid login credentials/i.test(mensaje)) return 'Correo o contraseña incorrectos.'
+  if (/Invalid login credentials/i.test(mensaje)) return 'Código o contraseña incorrectos.'
   if (/User already registered|already been registered/i.test(mensaje))
-    return 'Ese correo ya está registrado. Ingresa con tu contraseña.'
-  if (/Email not confirmed/i.test(mensaje))
-    return 'Tu proyecto pide confirmar el correo. Desactiva "Confirm email" en Supabase → Authentication → Providers → Email.'
+    return 'Ese código ya está registrado. Ingresa con tu contraseña.'
   if (/Password should be at least/i.test(mensaje))
     return 'La contraseña debe tener al menos 6 caracteres.'
-  if (/rate limit|too many|security purposes/i.test(mensaje))
-    return 'Demasiados intentos. Espera un minuto e intenta de nuevo.'
   return mensaje
 }
