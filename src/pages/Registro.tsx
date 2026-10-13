@@ -115,11 +115,33 @@ function Formulario({ uid }: { uid: string }) {
     setBienvenida(false)
   }, [])
   const cerrarAviso = useCallback(() => setAviso(null), [])
+  // Único lugar donde se explica un fallo: antes el mensaje real de Supabase
+  // quedaba tapado por un texto genérico y no se podía diagnosticar nada.
   const detalleErrorSlider = useCallback((fallo: unknown) => {
     const mensaje = fallo instanceof Error ? fallo.message : ''
     if (mensaje === 'Faltan campos obligatorios') return
     if (mensaje === 'YA_REGISTRADO') return
-    setAviso({ mensaje: 'No se pudo guardar la asistencia. Inténtalo otra vez.', tipo: 'error' })
+    if (/CAMPOS_OBLIGATORIOS|TURNO_INVALIDO/.test(mensaje)) {
+      setAviso({ mensaje: 'Completa todos los campos obligatorios.', tipo: 'error' })
+      return
+    }
+    if (mensaje === 'NO_AUTENTICADO') {
+      setAviso({ mensaje: 'Tu sesión expiró. Vuelve a ingresar.', tipo: 'error' })
+      return
+    }
+    // La función de la base de datos todavía no tiene el parámetro p_turno.
+    if (/Could not find the function|schema cache|PGRST/i.test(mensaje)) {
+      setAviso({
+        mensaje:
+          'La base de datos está desactualizada: ejecuta supabase/turnos.sql en Supabase → SQL Editor y reintenta.',
+        tipo: 'error',
+      })
+      return
+    }
+    setAviso({
+      mensaje: `No se pudo registrar: ${mensaje || 'error desconocido'}`,
+      tipo: 'error',
+    })
   }, [])
 
   // 1) Si este navegador ya registro, el estado inicial ya viene bloqueado.
@@ -223,15 +245,9 @@ function Formulario({ uid }: { uid: string }) {
         setYaRegistro(true)
         throw new Error('YA_REGISTRADO')
       }
-      if (/CAMPOS_OBLIGATORIOS|TURNO_INVALIDO/.test(error.message)) {
-        setAviso({ mensaje: 'Completa todos los campos obligatorios.', tipo: 'error' })
-        throw error
-      }
       if (/NO_AUTENTICADO/.test(error.message)) {
-        setAviso({ mensaje: 'Tu sesión expiró. Vuelve a ingresar.', tipo: 'error' })
-        throw error
+        throw new Error('NO_AUTENTICADO')
       }
-      setAviso({ mensaje: `No se pudo registrar: ${error.message}`, tipo: 'error' })
       throw error
     }
 

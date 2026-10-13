@@ -45,8 +45,11 @@ begin
     raise exception 'CAMPOS_OBLIGATORIOS';
   end if;
 
-  -- El turno es obligatorio y solo puede ser MANANA o TARDE.
-  if p_turno is null or p_turno not in ('MANANA', 'TARDE') then
+  -- El turno es obligatorio. El tipo enum ya solo admite MANANA y TARDE,
+  -- asi que basta con comprobar que no venga nulo. Evita comparar con el
+  -- literal 'MANANA' porque recien agregado todavia no se puede usar
+  -- dentro de la misma transaccion.
+  if p_turno is null then
     raise exception 'TURNO_INVALIDO';
   end if;
 

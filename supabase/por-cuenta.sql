@@ -79,7 +79,7 @@ begin
     raise exception 'YA_REGISTRADO';
   end if;
 
-  if p_turno is null or p_turno not in ('MANANA', 'TARDE') then
+  if p_turno is null then
     raise exception 'TURNO_INVALIDO';
   end if;
 
