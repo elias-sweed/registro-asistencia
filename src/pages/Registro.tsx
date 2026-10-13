@@ -24,9 +24,7 @@ import {
 import { limpiarNombre, validarNombre } from '../lib/validacion'
 import type { Programa } from '../lib/types'
 
-type Errores = Partial<
-  Record<'nombres' | 'apellidos' | 'programa' | 'ciclo' | 'asistio', string>
->
+type Errores = Partial<Record<'nombres' | 'apellidos' | 'programa' | 'ciclo', string>>
 
 type Bloqueo = {
   titulo: string
@@ -52,9 +50,15 @@ export function Registro() {
 
   if (cargando) return <PantallaCarga />
   if (!sesion) return <Navigate to="/login" replace />
-  if (esAdmin) return <Navigate to="/login/admin" replace />
+  if (esAdmin) return <Navigate to="/admin" replace />
 
-  return <Formulario uid={sesion.user.id} />
+  return (
+    <Formulario
+      uid={sesion.user.id}
+      nombresIniciales={sesion.user.user_metadata?.nombres ?? ''}
+      apellidosIniciales={sesion.user.user_metadata?.apellidos ?? ''}
+    />
+  )
 }
 
 function PantallaCarga() {
@@ -65,19 +69,28 @@ function PantallaCarga() {
   )
 }
 
-function Formulario({ uid }: { uid: string }) {
+function Formulario({
+  uid,
+  nombresIniciales,
+  apellidosIniciales,
+}: {
+  uid: string
+  nombresIniciales: string
+  apellidosIniciales: string
+}) {
   const { correo, salir } = useAuth()
 
-  const [bienvenida, setBienvenida] = useState(true)
-  const [nombres, setNombres] = useState('')
-  const [apellidos, setApellidos] = useState('')
+  const [bienvenida, setBienvenida] = useState(
+    () => sessionStorage.getItem('asistencia:bienvenida') !== '1',
+  )
+  const [nombres, setNombres] = useState(nombresIniciales)
+  const [apellidos, setApellidos] = useState(apellidosIniciales)
   const [programa, setPrograma] = useState<Programa | ''>('')
   const [ciclo, setCiclo] = useState<number | ''>('')
-  const [asistio, setAsistio] = useState(false)
   const [errores, setErrores] = useState<Errores>({})
   const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(null)
-const [ahora, setAhora] = useState(() => new Date())
-  const [yaRegistro, setYaRegistro] = useState(() => navegadorRegistrado() !== null)
+  const [ahora, setAhora] = useState(() => new Date())
+  const [yaRegistro, setYaRegistro] = useState(() => navegadorRegistrado(correo) !== null)
   const [celebracion, setCelebracion] = useState<{ nombre: string; programa: string } | null>(null)
   const [bloqueo, setBloqueo] = useState<Bloqueo | null>(null)
 
@@ -110,7 +123,10 @@ const [ahora, setAhora] = useState(() => new Date())
     return () => window.clearInterval(id)
   }, [])
 
-  const cerrarBienvenida = useCallback(() => setBienvenida(false), [])
+  const cerrarBienvenida = useCallback(() => {
+    sessionStorage.setItem('asistencia:bienvenida', '1')
+    setBienvenida(false)
+  }, [])
   const cerrarAviso = useCallback(() => setAviso(null), [])
   const detalleErrorSlider = useCallback((fallo: unknown) => {
     const mensaje = fallo instanceof Error ? fallo.message : ''
@@ -179,7 +195,6 @@ const [ahora, setAhora] = useState(() => new Date())
     if (!programa) nuevos.programa = 'Selecciona tu programa.'
     if (programa && aplicaCiclo(programa) && ciclo === '')
       nuevos.ciclo = 'Selecciona tu ciclo.'
-    if (!asistio) nuevos.asistio = 'Debes marcar la asistencia para registrar.'
 
     return nuevos
   }
@@ -224,7 +239,6 @@ const [ahora, setAhora] = useState(() => new Date())
       throw error
     }
 
-    setAsistio(false)
     setYaRegistro(true)
     marcarRegistroHecho(correo)
     setAviso({ mensaje: `Asistencia registrada ${nombreLimpio}`, tipo: 'exito' })
@@ -440,40 +454,6 @@ const [ahora, setAhora] = useState(() => new Date())
                 Se toma automáticamente al momento de registrar.
               </p>
             </Campo>
-
-            <div>
-              <label
-                htmlFor="asistio"
-                className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3.5 transition ${
-                  errores.asistio
-                    ? 'border-carmesi-400 bg-carmesi-500/10'
-                    : asistio
-                      ? 'border-oro-500/70 bg-oro-500/10'
-                      : 'border-ink-600 bg-ink-950/40 hover:border-oro-500/50'
-                }`}
-              >
-                <input
-                  id="asistio"
-                  name="asistio"
-                  type="checkbox"
-                  required
-                  checked={asistio}
-                  onChange={(e) => setAsistio(e.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 accent-oro-500"
-                />
-                <span>
-                  <span className="block text-sm font-semibold text-perla-50">
-                    Asistió y marcó <span className="text-oro-400">*</span>
-                  </span>
-                  <span className="mt-0.5 block text-xs text-perla-300">
-                    Marca esta casilla para confirmar tu asistencia al turno.
-                  </span>
-                </span>
-              </label>
-              {errores.asistio && (
-                <p className="mt-1.5 text-xs text-carmesi-400">{errores.asistio}</p>
-              )}
-            </div>
 
             <div ref={cajaSlider} className="flex justify-center pt-1">
               <SlideCommit

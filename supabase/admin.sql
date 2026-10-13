@@ -155,15 +155,3 @@ $$;
 
 revoke execute on function public.admin_datos() from public, anon;
 grant execute on function public.admin_datos() to authenticated;
-
--- 5) Vista de control (solo service_role) ---------------------
-drop view if exists public.vista_registros_ip;
-create or replace view public.vista_registros_ip as
-select r.ip, r.correo, r.creado_en,
-       coalesce(p.nombres, '') || ' ' || coalesce(p.apellidos, '') as practicante
-from public.registros_ip r
-left join public.practicantes p on p.id = r.practicante_id
-order by r.creado_en desc;
-
-revoke all on public.vista_registros_ip from anon, authenticated;
-grant select on public.vista_registros_ip to service_role;

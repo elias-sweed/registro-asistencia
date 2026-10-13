@@ -49,3 +49,35 @@ export function validarClave(valor: string): string | null {
 
   return null
 }
+
+/** Genera una contraseña segura de 12 caracteres con letras, números y símbolos. */
+export function generarClaveSegura(longitud = 12): string {
+  const minusculas = 'abcdefghijkmnpqrstuvwxyz'
+  const mayusculas = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const numeros = '23456789'
+  const simbolos = '!@#$%&*+-=?'
+  const todos = minusculas + mayusculas + numeros + simbolos
+
+  const valores = new Uint32Array(longitud)
+  crypto.getRandomValues(valores)
+
+  const obligatorias = [
+    minusculas[valores[0] % minusculas.length],
+    mayusculas[valores[1] % mayusculas.length],
+    numeros[valores[2] % numeros.length],
+    simbolos[valores[3] % simbolos.length],
+  ]
+
+  const resto: string[] = []
+  for (let i = obligatorias.length; i < longitud; i++) {
+    resto.push(todos[valores[i] % todos.length])
+  }
+
+  const combinado = [...obligatorias, ...resto]
+  for (let i = combinado.length - 1; i > 0; i--) {
+    const j = valores[i] % (i + 1)
+    ;[combinado[i], combinado[j]] = [combinado[j], combinado[i]]
+  }
+
+  return combinado.join('')
+}

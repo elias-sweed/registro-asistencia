@@ -11,7 +11,6 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/login/admin" element={<Admin />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

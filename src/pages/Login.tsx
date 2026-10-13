@@ -1,13 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
 import { CampoClave } from '../components/CampoClave'
-import { Escudo, Ornamento } from '../components/Escudo'
+import { MarcoAcceso } from '../components/MarcoAcceso'
 import { FondoRayos } from '../components/FondoRayos'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
 import { supabase } from '../lib/supabase'
-import { correoDesdeNombre, limpiarNombre, validarClave, validarNombre } from '../lib/validacion'
+import {
+  correoDesdeNombre,
+  generarClaveSegura,
+  limpiarNombre,
+  validarClave,
+  validarNombre,
+} from '../lib/validacion'
 
 type Modo = 'ingresar' | 'registrar'
 
@@ -20,6 +27,7 @@ export function Login() {
   const [repetirClave, setRepetirClave] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [copiada, setCopiada] = useState(false)
   const [esAdmin, setEsAdmin] = useState<boolean | null>(null)
 
   const correoSesion = sesion?.user.email ?? ''
@@ -35,6 +43,17 @@ export function Login() {
     }
   }, [sesion, correoSesion])
 
+  const usuarioSugerido = useMemo(() => {
+    const parte = `${nombre} ${apellidos}`
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    return parte || '…'
+  }, [nombre, apellidos])
+
   if (cargando || (sesion && esAdmin === null)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -43,9 +62,34 @@ export function Login() {
     )
   }
 
-  if (sesion) return <Navigate to={esAdmin ? '/login/admin' : '/registro'} replace />
+  if (sesion) return <Navigate to={esAdmin ? '/admin' : '/registro'} replace />
 
   const esRegistro = modo === 'registrar'
+
+  function cambiarModo() {
+    setModo(esRegistro ? 'ingresar' : 'registrar')
+    setRepetirClave('')
+    setError('')
+    setCopiada(false)
+  }
+
+  function sugerirClave() {
+    const nueva = generarClaveSegura()
+    setClave(nueva)
+    setRepetirClave(nueva)
+    setCopiada(false)
+    setError('')
+  }
+
+  async function copiarClave() {
+    try {
+      await navigator.clipboard.writeText(clave)
+      setCopiada(true)
+      window.setTimeout(() => setCopiada(false), 1500)
+    } catch {
+      setError('No se pudo copiar. Cópiala manualmente.')
+    }
+  }
 
   async function manejarEnvio(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
@@ -82,6 +126,12 @@ export function Login() {
         const { data, error: errorRegistro } = await supabase.auth.signUp({
           email: correoInterno,
           password: clave,
+          options: {
+            data: {
+              nombres: nombre.trim(),
+              apellidos: apellidos.trim(),
+            },
+          },
         })
         if (
           errorRegistro &&
@@ -89,14 +139,22 @@ export function Login() {
         )
           throw errorRegistro
 
-        // Si esa cuenta ya existe, se entra con la misma clave.
         if (data?.session) return
 
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
           email: correoInterno,
           password: clave,
         })
-        if (errorIngreso) throw errorIngreso
+
+        if (errorIngreso) {
+          if (/Invalid login credentials/i.test(errorIngreso.message)) {
+            setError(
+              'Ya existe una cuenta con este nombre. Si eres tú, ingresa con tu contraseña. Si hay otra persona con tu nombre, avisa al coordinador.',
+            )
+            return
+          }
+          throw errorIngreso
+        }
       } else {
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
           email: correoInterno,
@@ -116,134 +174,167 @@ export function Login() {
       <div className="textura pointer-events-none fixed inset-0" aria-hidden="true" />
 
       <div className="relative w-full max-w-md">
-        <header className="mb-7 flex flex-col items-center text-center">
-          <Escudo alto="h-24" />
-          <p className="rotulo mt-4">Institución Educativa Superior N.º P</p>
-          <h1 className="font-display mt-1 text-3xl leading-tight font-semibold text-perla-50">
-            Registro de Asistencia
-          </h1>
-          <p className="mt-1 text-sm italic text-perla-300">
-            Superación · Estudio · Trabajo — Tarapoto
-          </p>
-          <div className="mt-4 w-40">
-            <Ornamento />
-          </div>
-        </header>
+        <MarcoAcceso
+          rotulo="Institución Educativa Superior N.º P"
+          titulo="Registro de Asistencia"
+          subtitulo="Superación · Estudio · Trabajo — Tarapoto"
+        />
 
         <main className="panel rounded-xl p-7">
-          <h2 className="font-display text-center text-xl font-semibold text-perla-50">
-            {esRegistro ? 'Crear cuenta de practicante' : 'Ingresar'}
-          </h2>
-          <p className="mt-1 text-center text-sm text-perla-300">
-            {esRegistro
-              ? 'Nombres, apellidos y contraseña. Tu cuenta queda lista al instante.'
-              : 'Escribe tu nombre, apellidos y contraseña para marcar tu asistencia.'}
-          </p>
-
-          <form onSubmit={manejarEnvio} noValidate className="mt-5 space-y-4">
-            <div>
-              <label htmlFor="nombre" className="rotulo mb-1.5 block">
-                Nombres *
-              </label>
-              <input
-                id="nombre"
-                name="nombre"
-                type="text"
-                required
-                minLength={2}
-                maxLength={60}
-                autoComplete="given-name"
-                value={nombre}
-                onChange={(e) => setNombre(limpiarNombre(e.target.value))}
-                placeholder="Juan Carlos"
-                className="campo"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="apellidos" className="rotulo mb-1.5 block">
-                Apellidos *
-              </label>
-              <input
-                id="apellidos"
-                name="apellidos"
-                type="text"
-                required
-                minLength={2}
-                maxLength={60}
-                autoComplete="family-name"
-                value={apellidos}
-                onChange={(e) => setApellidos(limpiarNombre(e.target.value))}
-                placeholder="Quispe Huamán"
-                className="campo"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="clave" className="rotulo mb-1.5 block">
-                Contraseña *
-              </label>
-              <CampoClave
-                id="clave"
-                valor={clave}
-                alCambiar={setClave}
-                autoComplete={esRegistro ? 'new-password' : 'current-password'}
-                placeholder="Mínimo 6 caracteres"
-              />
-            </div>
-
-            {esRegistro && (
-              <div>
-                <label htmlFor="repetirClave" className="rotulo mb-1.5 block">
-                  Confirmar contraseña *
-                </label>
-                <CampoClave
-                  id="repetirClave"
-                  valor={repetirClave}
-                  alCambiar={setRepetirClave}
-                  autoComplete="new-password"
-                  placeholder="Repite la contraseña"
-                />
-              </div>
-            )}
-
-            {error && (
-              <p
-                role="alert"
-                className="rounded-lg border border-carmesi-400/40 bg-carmesi-500/10 px-3 py-2 text-sm text-perla-100"
-              >
-                {error}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={modo}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              <h2 className="font-display text-center text-xl font-semibold text-perla-50">
+                {esRegistro ? 'Crear cuenta de practicante' : 'Ingresar'}
+              </h2>
+              <p className="mt-1 text-center text-sm text-perla-300">
+                {esRegistro
+                  ? 'Nombres, apellidos y contraseña. Tu cuenta queda lista al instante.'
+                  : 'Escribe tu nombre, apellidos y contraseña para marcar tu asistencia.'}
               </p>
-            )}
 
-            <button type="submit" disabled={enviando} className="boton-oro">
-              {enviando ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-ink-950 border-t-transparent" />
-              ) : esRegistro ? (
-                'Crear cuenta'
-              ) : (
-                'Ingresar'
-              )}
-            </button>
+              <form onSubmit={manejarEnvio} noValidate className="mt-5 space-y-4">
+                <div>
+                  <label htmlFor="nombre" className="rotulo mb-1.5 block">
+                    Nombres *
+                  </label>
+                  <input
+                    id="nombre"
+                    name="nombre"
+                    type="text"
+                    required
+                    minLength={2}
+                    maxLength={60}
+                    autoComplete="given-name"
+                    value={nombre}
+                    onChange={(e) => setNombre(limpiarNombre(e.target.value))}
+                    placeholder="Juan Carlos"
+                    className="campo"
+                  />
+                </div>
 
-            <p className="pt-1 text-center text-sm text-perla-300">
-              {esRegistro ? '¿Ya tienes cuenta?' : '¿Primera vez aquí?'}{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setModo(esRegistro ? 'ingresar' : 'registrar')
-                  setRepetirClave('')
-                  setError('')
-                }}
-                className="enlace"
-              >
-                {esRegistro ? 'Ingresar' : 'Crear cuenta'}
-              </button>
-            </p>
-          </form>
+                <div>
+                  <label htmlFor="apellidos" className="rotulo mb-1.5 block">
+                    Apellidos *
+                  </label>
+                  <input
+                    id="apellidos"
+                    name="apellidos"
+                    type="text"
+                    required
+                    minLength={2}
+                    maxLength={60}
+                    autoComplete="family-name"
+                    value={apellidos}
+                    onChange={(e) => setApellidos(limpiarNombre(e.target.value))}
+                    placeholder="Quispe Huamán"
+                    className="campo"
+                  />
+                </div>
+
+                {esRegistro && (
+                  <div>
+                    <label className="rotulo mb-1.5 block">Tu usuario</label>
+                    <div className="campo flex items-center justify-between gap-2 bg-ink-950 py-3">
+                      <span className="truncate font-mono text-sm text-perla-200">
+                        {usuarioSugerido}
+                      </span>
+                      <span className="shrink-0 text-xs text-perla-500">@asistencia.local</span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-perla-400">
+                      Así se llamará tu cuenta. Anótalo junto con tu contraseña.
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="clave" className="rotulo mb-1.5 block">
+                    Contraseña *
+                  </label>
+                  <CampoClave
+                    id="clave"
+                    valor={clave}
+                    alCambiar={setClave}
+                    autoComplete={esRegistro ? 'new-password' : 'current-password'}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                  {esRegistro && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={sugerirClave}
+                        className="enlace text-xs"
+                      >
+                        Sugerir contraseña segura
+                      </button>
+                      {clave && (
+                        <button
+                          type="button"
+                          onClick={copiarClave}
+                          className="enlace text-xs"
+                        >
+                          {copiada ? 'Copiada ✓' : 'Copiar'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {esRegistro && (
+                  <div>
+                    <label htmlFor="repetirClave" className="rotulo mb-1.5 block">
+                      Confirmar contraseña *
+                    </label>
+                    <CampoClave
+                      id="repetirClave"
+                      valor={repetirClave}
+                      alCambiar={setRepetirClave}
+                      autoComplete="new-password"
+                      placeholder="Repite la contraseña"
+                    />
+                  </div>
+                )}
+
+                {error && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-carmesi-400/40 bg-carmesi-500/10 px-3 py-2 text-sm text-perla-100"
+                  >
+                    {error}
+                  </p>
+                )}
+
+                <button type="submit" disabled={enviando} className="boton-oro">
+                  {enviando ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-ink-950 border-t-transparent" />
+                  ) : esRegistro ? (
+                    'Crear cuenta'
+                  ) : (
+                    'Ingresar'
+                  )}
+                </button>
+
+                <p className="pt-1 text-center text-sm text-perla-300">
+                  {esRegistro ? '¿Ya tienes cuenta?' : '¿Primera vez aquí?'}{' '}
+                  <button type="button" onClick={cambiarModo} className="enlace">
+                    {esRegistro ? 'Ingresar' : 'Crear cuenta'}
+                  </button>
+                </p>
+              </form>
+            </motion.div>
+          </AnimatePresence>
         </main>
 
-        <p className="mt-5 text-center text-xs leading-relaxed text-perla-400">
+        <p className="mt-5 text-center text-sm text-perla-300">
+          ¿No puedes entrar? Avisa al coordinador de la institución.
+        </p>
+
+        <p className="mt-2 text-center text-xs leading-relaxed text-perla-400">
           Todos los campos son obligatorios · La fecha y hora se registran automáticamente
         </p>
       </div>
