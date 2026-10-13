@@ -92,6 +92,7 @@ export type Database = {
           p_apellidos: string
           p_programa: Programa
           p_ciclo: number | null
+          p_turno: Turno
           p_fecha?: string
         }
         Returns: string

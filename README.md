@@ -11,8 +11,8 @@ asistencia de los practicantes de una Institución Educativa.
    confirmación por correo: al crear la cuenta ya entra al sistema.
 3. **Modal de bienvenida** — al entrar se muestra un modal de carga con un tablero de letras
    por ~2.6 s.
-4. **Formulario** — nombres, apellidos, programa/rol, ciclo, turno y fecha y hora
-   automáticas, más la casilla obligatoria «Asistió y marcó».
+4. **Formulario** — nombres, apellidos, programa/rol, ciclo, turno (Mañana o Tarde) y fecha y
+   hora automáticas.
 
 | Programa / Rol | Ciclos           |
 | -------------- | ---------------- |
@@ -20,9 +20,8 @@ asistencia de los practicantes de una Institución Educativa.
 | UCV            | 1 al 10          |
 | Docente API    | no aplica        |
 
-El turno es único: **Tarde y Mañana** (ambos asisten por la mañana). No hay restricción de
-hora: se puede marcar a cualquier momento y la fecha y hora se toman automáticamente al
-registrar.
+Elige tu turno: **Mañana** o **Tarde**. No hay restricción de hora: se puede marcar a cualquier
+momento y la fecha y hora se toman automáticamente al registrar.
 5. **Diapositiva de confirmación** — para registrar hay que arrastrar el control
    **«Desliza para registrar»** hasta el extremo (o con las flechas del teclado y `Fin`).
    Muestra el spinner mientras guarda y un check dorado al terminar.
@@ -173,5 +172,16 @@ src/
 supabase/schema.sql                script de creación de tablas
 supabase/migracion-programas.sql   migración de ciclos I-IV a programas SENATI/UCV/Docente API
 supabase/por-cuenta.sql            un solo registro por cuenta (sin bloqueo por IP)
+supabase/turnos.sql                agrega el turno MANANA y el parámetro p_turno al RPC
 supabase/admin.sql                 panel de administrador
 ```
+
+## Instalar los scripts de la base de datos
+
+En **Supabase → SQL Editor**, ejecuta en este orden:
+
+1. `supabase/schema.sql` (solo si la base está vacía)
+2. `supabase/migracion-programas.sql` (solo si venías de la versión con ciclos I–IV)
+3. `supabase/por-cuenta.sql`
+4. **`supabase/turnos.sql`** ← obligatorio para poder elegir Mañana o Tarde
+5. `supabase/admin.sql`

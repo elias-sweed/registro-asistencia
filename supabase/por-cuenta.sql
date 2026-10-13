@@ -7,6 +7,7 @@
 -- 1) Quitar lo que dependa de la tabla de IP ---------------
 drop view if exists public.vista_registros_ip;
 drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text, smallint, smallint);
+drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, public.turno, timestamptz);
 drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text);
 drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, timestamptz, text, smallint);
 drop function if exists public.registrar_asistencia(text, text, public.programa, smallint, public.turno, timestamptz, text, smallint);
@@ -43,7 +44,8 @@ create or replace function public.registrar_asistencia(
   p_nombres   text,
   p_apellidos text,
   p_programa  public.programa,
-  p_ciclo     smallint,
+p_ciclo     smallint,
+  p_turno     public.turno,
   p_fecha     timestamptz default now()
 )
 returns uuid
@@ -55,6 +57,7 @@ declare
   v_uid    uuid := auth.uid();
   v_correo text;
   v_ciclo  smallint;
+  v_turno  public.turno;
 begin
   if v_uid is null then
     raise exception 'NO_AUTENTICADO';
@@ -76,7 +79,12 @@ begin
     raise exception 'YA_REGISTRADO';
   end if;
 
+  if p_turno is null or p_turno not in ('MANANA', 'TARDE') then
+    raise exception 'TURNO_INVALIDO';
+  end if;
+
   v_ciclo := case when p_programa = 'DOCENTE_API' then null else coalesce(p_ciclo, 1) end;
+  v_turno := p_turno;
 
   begin
     insert into public.registros_realizados (practicante_id, nombres, apellidos)
@@ -89,14 +97,14 @@ begin
     (practicante_id, correo, nombres, apellidos, programa, ciclo, turno, asistio, fecha)
   values
     (v_uid, v_correo, btrim(p_nombres), btrim(p_apellidos),
-     p_programa, v_ciclo, 'TARDE'::public.turno, true, coalesce(p_fecha, now()));
+     p_programa, v_ciclo, v_turno, true, coalesce(p_fecha, now()));
 
   update public.practicantes
      set nombres        = btrim(p_nombres),
          apellidos       = btrim(p_apellidos),
          programa       = p_programa,
          ciclo          = v_ciclo,
-         turno          = 'TARDE'::public.turno,
+         turno          = v_turno,
          actualizado_en = now()
    where id = v_uid;
 
@@ -104,5 +112,5 @@ begin
 end;
 $$;
 
-revoke execute on function public.registrar_asistencia(text, text, public.programa, smallint, timestamptz) from public, anon;
-grant execute on function public.registrar_asistencia(text, text, public.programa, smallint, timestamptz) to authenticated;
+revoke execute on function public.registrar_asistencia(text, text, public.programa, smallint, public.turno, timestamptz) from public, anon;
+grant execute on function public.registrar_asistencia(text, text, public.programa, smallint, public.turno, timestamptz) to authenticated;

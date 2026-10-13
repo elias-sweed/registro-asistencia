@@ -14,16 +14,16 @@ import { marcarRegistroHecho, navegadorRegistrado } from '../lib/bloqueo'
 import { supabase } from '../lib/supabase'
 import {
   PROGRAMAS,
-  TURNO_TEXTO,
+  TURNOS,
   aplicaCiclo,
   ciclosDe,
   formatearFecha,
   textoPrograma,
 } from '../lib/constantes'
 import { limpiarNombre, validarNombre } from '../lib/validacion'
-import type { Programa } from '../lib/types'
+import type { Programa, Turno } from '../lib/types'
 
-type Errores = Partial<Record<'nombres' | 'apellidos' | 'programa' | 'ciclo', string>>
+type Errores = Partial<Record<'nombres' | 'apellidos' | 'programa' | 'ciclo' | 'turno', string>>
 
 type Bloqueo = {
   titulo: string
@@ -51,41 +51,29 @@ export function Registro() {
   if (!sesion) return <Navigate to="/login" replace />
   if (esAdmin) return <Navigate to="/admin" replace />
 
-  return (
-    <Formulario
-      uid={sesion.user.id}
-      nombresIniciales={sesion.user.user_metadata?.nombres ?? ''}
-      apellidosIniciales={sesion.user.user_metadata?.apellidos ?? ''}
-    />
-  )
+  return <Formulario uid={sesion.user.id} />
 }
 
 function PantallaCarga() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <span className="h-9 w-9 animate-spin rounded-full border-2 border-oro-500 border-t-transparent" />
+    <div className="fondo-ie relative flex min-h-screen items-center justify-center">
+      <div className="velo-ie" aria-hidden="true" />
+      <span className="relative h-9 w-9 animate-spin rounded-full border-2 border-oro-500 border-t-transparent" />
     </div>
   )
 }
 
-function Formulario({
-  uid,
-  nombresIniciales,
-  apellidosIniciales,
-}: {
-  uid: string
-  nombresIniciales: string
-  apellidosIniciales: string
-}) {
+function Formulario({ uid }: { uid: string }) {
   const { correo, salir } = useAuth()
 
   const [bienvenida, setBienvenida] = useState(
     () => sessionStorage.getItem('asistencia:bienvenida') !== '1',
   )
-  const [nombres, setNombres] = useState(nombresIniciales)
-  const [apellidos, setApellidos] = useState(apellidosIniciales)
+  const [nombres, setNombres] = useState('')
+  const [apellidos, setApellidos] = useState('')
   const [programa, setPrograma] = useState<Programa | ''>('')
   const [ciclo, setCiclo] = useState<number | ''>('')
+  const [turno, setTurno] = useState<Turno | ''>('')
   const [errores, setErrores] = useState<Errores>({})
   const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(null)
   const [ahora, setAhora] = useState(() => new Date())
@@ -201,6 +189,7 @@ function Formulario({
     if (!programa) nuevos.programa = 'Selecciona tu programa.'
     if (programa && aplicaCiclo(programa) && ciclo === '')
       nuevos.ciclo = 'Selecciona tu ciclo.'
+    if (!turno) nuevos.turno = 'Selecciona tu turno.'
 
     return nuevos
   }
@@ -224,6 +213,7 @@ function Formulario({
       p_apellidos: apellidoLimpio,
       p_programa: programa as Programa,
       p_ciclo: cicloFinal,
+      p_turno: turno as Turno,
       p_fecha: fechaISO,
     })
 
@@ -233,7 +223,7 @@ function Formulario({
         setYaRegistro(true)
         throw new Error('YA_REGISTRADO')
       }
-      if (/CAMPOS_OBLIGATORIOS/.test(error.message)) {
+      if (/CAMPOS_OBLIGATORIOS|TURNO_INVALIDO/.test(error.message)) {
         setAviso({ mensaje: 'Completa todos los campos obligatorios.', tipo: 'error' })
         throw error
       }
@@ -418,18 +408,22 @@ function Formulario({
               </Campo>
             </div>
 
-            <Campo id="turno" etiqueta="Turno">
-              <input
+            <Campo id="turno" etiqueta="Turno" error={errores.turno}>
+              <select
                 id="turno"
                 name="turno"
-                type="text"
-                readOnly
-                value={TURNO_TEXTO}
-                className="campo cursor-not-allowed bg-ink-950 text-perla-300"
-              />
-              <p className="mt-1.5 text-xs text-perla-400">
-                Turno único: Tarde y Mañana. Ambos turnos asisten por la mañana.
-              </p>
+                required
+                value={turno}
+                onChange={(e) => setTurno(e.target.value as Turno | '')}
+                className={claseCampo(Boolean(errores.turno))}
+              >
+                <option value="">Selecciona…</option>
+                {TURNOS.map((opcion) => (
+                  <option key={opcion.valor} value={opcion.valor}>
+                    {opcion.texto}
+                  </option>
+                ))}
+              </select>
             </Campo>
 
             <Campo id="fecha" etiqueta="Fecha y hora del registro">

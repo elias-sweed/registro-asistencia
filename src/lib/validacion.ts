@@ -20,18 +20,6 @@ export function limpiarNombre(valor: string) {
 
 const RE_CORREO = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
 
-/** Genera el correo interno que usa Supabase a partir del nombre y apellido. */
-export function correoDesdeNombre(nombre: string, apellidos: string) {
-  const parte = `${nombre} ${apellidos}`
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return `${parte || 'practicante'}@asistencia.local`
-}
-
 export function validarCorreo(valor: string): string | null {
   const texto = valor.trim()
 

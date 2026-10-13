@@ -34,13 +34,15 @@ export function aplicaCiclo(valor: Programa | '') {
   return buscarPrograma(valor)?.aplicaCiclo ?? false
 }
 
-/** La institución tiene un solo turno: Tarde y Mañana (ambos en la mañana). */
-export const TURNO: Turno = 'TARDE'
+/** La institución tiene dos turnos: mañana y tarde. */
+export const TURNOS: { valor: Turno; texto: string }[] = [
+  { valor: 'MANANA', texto: 'Mañana' },
+  { valor: 'TARDE', texto: 'Tarde' },
+]
 
-export const TURNO_TEXTO = 'Tarde y Mañana'
-
-export function textoTurno(turno: Turno | null) {
-  return turno === TURNO ? TURNO_TEXTO : '-'
+export function textoTurno(turno: Turno | string | null | undefined) {
+  if (!turno) return '-'
+  return TURNOS.find((t) => t.valor === turno)?.texto ?? '-'
 }
 
 const formatoFecha = new Intl.DateTimeFormat('es', {

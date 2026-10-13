@@ -8,9 +8,9 @@ do $$ begin
   create type public.programa as enum ('SENATI', 'UCV', 'DOCENTE_API');
 exception when duplicate_object then null; end $$;
 
--- Un solo turno: Tarde
+-- Dos turnos: mañana y tarde
 do $$ begin
-  create type public.turno as enum ('TARDE');
+  create type public.turno as enum ('MANANA', 'TARDE');
 exception when duplicate_object then null; end $$;
 
 -- 2) Tabla de practicantes ------------------------------------------

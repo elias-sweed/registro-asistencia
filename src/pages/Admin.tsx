@@ -536,7 +536,7 @@ function Panel({
                               : 'bg-carmesi-500/15 text-carmesi-400'
                           }`}
                         >
-                          {esMarcado ? `Marcó · ${textoTurno('TARDE')}` : 'Sin marcar'}
+                          {esMarcado ? `Marcó · ${textoTurno(f.turno)}` : 'Sin marcar'}
                         </span>
                       </td>
                       <td className="px-2 py-2.5 text-xs text-perla-300">

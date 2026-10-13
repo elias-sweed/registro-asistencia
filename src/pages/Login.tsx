@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
@@ -6,21 +6,14 @@ import { MarcoAcceso } from '../components/MarcoAcceso'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
 import { supabase } from '../lib/supabase'
-import {
-  correoDesdeNombre,
-  generarClaveSegura,
-  limpiarNombre,
-  validarClave,
-  validarNombre,
-} from '../lib/validacion'
+import { generarClaveSegura, validarClave, validarCorreo } from '../lib/validacion'
 
 type Modo = 'ingresar' | 'registrar'
 
 export function Login() {
   const { sesion, cargando } = useAuth()
   const [modo, setModo] = useState<Modo>('ingresar')
-  const [nombre, setNombre] = useState('')
-  const [apellidos, setApellidos] = useState('')
+  const [correo, setCorreo] = useState('')
   const [clave, setClave] = useState('')
   const [repetirClave, setRepetirClave] = useState('')
   const [error, setError] = useState('')
@@ -40,17 +33,6 @@ export function Login() {
       vivo = false
     }
   }, [sesion, correoSesion])
-
-  const usuarioSugerido = useMemo(() => {
-    const parte = `${nombre} ${apellidos}`
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-    return parte || '…'
-  }, [nombre, apellidos])
 
   if (cargando || (sesion && esAdmin === null)) {
     return (
@@ -94,15 +76,9 @@ export function Login() {
     evento.preventDefault()
     setError('')
 
-    const errorNombre = validarNombre(nombre)
-    if (errorNombre) {
-      setError(errorNombre)
-      return
-    }
-
-    const errorApellidos = validarNombre(apellidos)
-    if (errorApellidos) {
-      setError(errorApellidos)
+    const errorCorreo = validarCorreo(correo)
+    if (errorCorreo) {
+      setError(errorCorreo)
       return
     }
 
@@ -117,29 +93,14 @@ export function Login() {
       return
     }
 
-    const nombreCompleto = `${nombre} ${apellidos}`.trim().toLowerCase().replace(/\s+/g, '')
-    if (
-      esRegistro &&
-      clave.toLowerCase().replace(/[^a-z]/g, '') === nombreCompleto.replace(/[^a-z]/g, '')
-    ) {
-      setError('La contraseña no puede ser igual a tu nombre.')
-      return
-    }
-
     setEnviando(true)
-    const correoInterno = correoDesdeNombre(nombre, apellidos)
+    const correoLimpio = correo.trim().toLowerCase()
 
     try {
       if (esRegistro) {
         const { data, error: errorRegistro } = await supabase.auth.signUp({
-          email: correoInterno,
+          email: correoLimpio,
           password: clave,
-          options: {
-            data: {
-              nombres: nombre.trim(),
-              apellidos: apellidos.trim(),
-            },
-          },
         })
         if (
           errorRegistro &&
@@ -150,14 +111,14 @@ export function Login() {
         if (data?.session) return
 
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
-          email: correoInterno,
+          email: correoLimpio,
           password: clave,
         })
 
         if (errorIngreso) {
           if (/Invalid login credentials/i.test(errorIngreso.message)) {
             setError(
-              'Ya existe una cuenta con este nombre. Si eres tú, ingresa con tu contraseña. Si hay otra persona con tu nombre, avisa al coordinador.',
+              'Ya existe una cuenta con ese correo. Si eres tú, ingresa con tu contraseña.',
             )
             return
           }
@@ -165,7 +126,7 @@ export function Login() {
         }
       } else {
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
-          email: correoInterno,
+          email: correoLimpio,
           password: clave,
         })
         if (errorIngreso) throw errorIngreso
@@ -201,73 +162,30 @@ export function Login() {
               </h2>
               <p className="mt-1 text-center text-sm text-perla-300/80">
                 {esRegistro
-                  ? 'Nombres, apellidos y contraseña. Tu cuenta queda lista al instante.'
-                  : 'Escribe tu nombre, apellidos y contraseña para marcar tu asistencia.'}
+                  ? 'Correo y contraseña. Tu cuenta queda lista al instante.'
+                  : 'Escribe tu correo y contraseña para marcar tu asistencia.'}
               </p>
 
               <form onSubmit={manejarEnvio} noValidate className="mt-7 space-y-6">
                 <div className="relative">
                   <input
-                    id="nombre"
-                    name="nombre"
-                    type="text"
+                    id="correo"
+                    name="correo"
+                    type="email"
                     required
-                    minLength={2}
-                    maxLength={60}
-                    autoComplete="given-name"
-                    value={nombre}
-                    onChange={(e) => setNombre(limpiarNombre(e.target.value))}
+                    maxLength={254}
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    value={correo}
+                    onChange={(e) => setCorreo(e.target.value)}
                     placeholder=" "
                     className="campo-flotante"
                   />
-                  <label htmlFor="nombre" className="etiqueta-flotante">
-                    Nombres *
+                  <label htmlFor="correo" className="etiqueta-flotante">
+                    Correo electrónico *
                   </label>
                 </div>
-
-                <div className="relative">
-                  <input
-                    id="apellidos"
-                    name="apellidos"
-                    type="text"
-                    required
-                    minLength={2}
-                    maxLength={60}
-                    autoComplete="family-name"
-                    value={apellidos}
-                    onChange={(e) => setApellidos(limpiarNombre(e.target.value))}
-                    placeholder=" "
-                    className="campo-flotante"
-                  />
-                  <label htmlFor="apellidos" className="etiqueta-flotante">
-                    Apellidos *
-                  </label>
-                </div>
-
-                {esRegistro && (
-                  <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2.5">
-                    <svg
-                      className="h-4 w-4 shrink-0 text-oro-400/80"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      aria-hidden="true"
-                    >
-                      <rect x="3" y="5" width="18" height="14" rx="2" />
-                      <path d="M7 10h10M7 14h6" strokeLinecap="round" />
-                    </svg>
-                    <span className="truncate font-mono text-sm text-perla-200">
-                      {usuarioSugerido}
-                    </span>
-                    <span className="shrink-0 text-xs text-perla-500">@asistencia.local</span>
-                  </div>
-                )}
-                {esRegistro && (
-                  <p className="-mt-4 text-xs text-perla-400">
-                    Así se llamará tu cuenta. Anótalo junto con tu contraseña.
-                  </p>
-                )}
 
                 <div className="relative">
                   <input
