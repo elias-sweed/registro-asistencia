@@ -115,10 +115,11 @@ function Formulario({ uid }: { uid: string }) {
     setBienvenida(false)
   }, [])
   const cerrarAviso = useCallback(() => setAviso(null), [])
-  // Único lugar donde se explica un fallo: antes el mensaje real de Supabase
-  // quedaba tapado por un texto genérico y no se podía diagnosticar nada.
+  // El error que devuelve Supabase es un objeto plano (PostgrestError), no una
+  // instancia de Error. Por eso hay que leer .message a mano o el fallo salía
+  // como "error desconocido".
   const detalleErrorSlider = useCallback((fallo: unknown) => {
-    const mensaje = fallo instanceof Error ? fallo.message : ''
+    const mensaje = leerMensaje(fallo)
     if (mensaje === 'Faltan campos obligatorios') return
     if (mensaje === 'YA_REGISTRADO') return
     if (/CAMPOS_OBLIGATORIOS|TURNO_INVALIDO/.test(mensaje)) {
@@ -139,7 +140,7 @@ function Formulario({ uid }: { uid: string }) {
       return
     }
     setAviso({
-      mensaje: `No se pudo registrar: ${mensaje || 'error desconocido'}`,
+      mensaje: `No se pudo registrar: ${mensaje || 'sin mensaje de error'}`,
       tipo: 'error',
     })
   }, [])
@@ -502,6 +503,19 @@ function Formulario({ uid }: { uid: string }) {
       </div>
     </div>
   )
+}
+
+/** Lee el mensaje de un error de Supabase o de JavaScript. */
+function leerMensaje(fallo: unknown): string {
+  if (!fallo) return ''
+  if (typeof fallo === 'string') return fallo
+  if (fallo instanceof Error) return fallo.message
+  if (typeof fallo === 'object' && 'message' in fallo) {
+    const base = String((fallo as { message?: unknown }).message ?? '')
+    const codigo = (fallo as { code?: unknown }).code
+    return codigo ? `${base} (${String(codigo)})` : base
+  }
+  return String(fallo)
 }
 
 function Campo({

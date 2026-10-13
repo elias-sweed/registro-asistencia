@@ -326,8 +326,19 @@ function BotonVerClave({ id }: { id: string }) {
   )
 }
 
+/** Los errores de Supabase no siempre son instancias de Error. */
+function leerMensaje(fallo: unknown): string {
+  if (!fallo) return 'Ocurrió un error, inténtalo otra vez.'
+  if (typeof fallo === 'string') return fallo
+  if (fallo instanceof Error) return fallo.message
+  if (typeof fallo === 'object' && 'message' in fallo) {
+    return String((fallo as { message?: unknown }).message ?? 'Ocurrió un error, inténtalo otra vez.')
+  }
+  return 'Ocurrió un error, inténtalo otra vez.'
+}
+
 function mensajeDeError(fallo: unknown) {
-  const mensaje = fallo instanceof Error ? fallo.message : 'Ocurrió un error, inténtalo otra vez.'
+  const mensaje = leerMensaje(fallo)
 
   if (/Invalid login credentials/i.test(mensaje))
     return 'Nombre, apellidos o contraseña incorrectos.'

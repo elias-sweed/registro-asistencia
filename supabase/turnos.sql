@@ -63,7 +63,7 @@ begin
 
   begin
     insert into public.registros_realizados (practicante_id, nombres, apellidos, fecha)
-    values (v_uid, btrim(p_nombres), btrim(p_apellidos));
+    values (v_uid, btrim(p_nombres), btrim(p_apellidos), now());
   exception when unique_violation then
     raise exception 'YA_REGISTRADO';
   end;
