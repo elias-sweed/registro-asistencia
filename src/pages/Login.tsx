@@ -118,6 +118,12 @@ export function Login() {
       return
     }
 
+    const nombreCompleto = `${nombre} ${apellidos}`.trim().toLowerCase().replace(/\s+/g, '')
+    if (esRegistro && clave.toLowerCase().replace(/[^a-z]/g, '') === nombreCompleto.replace(/[^a-z]/g, '')) {
+      setError('La contraseña no puede ser igual a tu nombre.')
+      return
+    }
+
     setEnviando(true)
     const correoInterno = correoDesdeNombre(nombre, apellidos)
 

@@ -1,4 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  Chart01Icon,
+  Home01Icon,
+  Logout01Icon,
+  Refresh01Icon,
+  Table01Icon,
+} from '@hugeicons/core-free-icons'
+import Dock from '../components/Dock'
+import type { DockItemData } from '../components/Dock'
 import { Escudo, Ornamento } from '../components/Escudo'
 import { GraficoBarras, GraficoColumnas, GraficoDona } from '../components/Graficos'
 import type { Segmento } from '../components/Graficos'
@@ -204,37 +214,70 @@ function Panel({
   const porcentajeMarcaron =
     resumen.cuentas > 0 ? Math.round((resumen.marcaron / resumen.cuentas) * 100) : 0
 
+  const scrollA = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const itemsDock: DockItemData[] = [
+    {
+      icon: <HugeiconsIcon icon={Home01Icon} size={22} strokeWidth={1.8} />,
+      label: 'Resumen',
+      onClick: () => scrollA('resumen'),
+    },
+    {
+      icon: <HugeiconsIcon icon={Chart01Icon} size={22} strokeWidth={1.8} />,
+      label: 'Gráficos',
+      onClick: () => scrollA('graficos'),
+    },
+    {
+      icon: <HugeiconsIcon icon={Table01Icon} size={22} strokeWidth={1.8} />,
+      label: 'Practicantes',
+      badge: resumen.pendientes > 0 ? resumen.pendientes : undefined,
+      onClick: () => scrollA('practicantes'),
+    },
+    {
+      icon: <HugeiconsIcon icon={Refresh01Icon} size={22} strokeWidth={1.8} />,
+      label: 'Actualizar',
+      onClick: recargar,
+    },
+    {
+      icon: <HugeiconsIcon icon={Logout01Icon} size={22} strokeWidth={1.8} />,
+      label: 'Salir',
+      onClick: () => void salir(),
+    },
+  ]
+
   return (
-    <div className="relative min-h-screen px-4 py-8">
+    <div className="relative min-h-screen pl-24 pr-4 py-8">
       <div className="textura pointer-events-none fixed inset-0" aria-hidden="true" />
 
+      <Dock
+        items={itemsDock}
+        position="left"
+        theme="dark"
+        baseItemSize={50}
+        magnification={70}
+        panelHeight={68}
+        accentColor="#c9a227"
+        badgeColor="#b32026"
+        showLabels
+        showIndicators
+        showBadges
+        bounce
+        tiles
+        distance={200}
+        gap={10}
+      />
+
       <div className="relative mx-auto w-full max-w-6xl">
-        <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <Escudo alto="h-14" />
-            <div>
-              <p className="rotulo">Panel de control · Turno Tarde y Mañana</p>
-              <h1 className="font-display text-2xl leading-tight font-semibold text-perla-50">
-                Registro de Asistencia
-              </h1>
-              <p className="truncate text-sm text-perla-300">Administrador: {correo}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={recargar}
-              className="rounded border border-ink-600 bg-ink-900/70 px-3 py-2 text-xs font-semibold tracking-[0.14em] text-perla-200 uppercase transition hover:border-oro-500/60 hover:text-oro-400"
-            >
-              Actualizar
-            </button>
-            <button
-              type="button"
-              onClick={() => void salir()}
-              className="rounded border border-ink-600 bg-ink-900/70 px-3 py-2 text-xs font-semibold tracking-[0.14em] text-perla-200 uppercase transition hover:border-oro-500/60 hover:text-oro-400"
-            >
-              Salir
-            </button>
+        <header className="mb-6 flex flex-wrap items-center gap-4">
+          <Escudo alto="h-14" />
+          <div>
+            <p className="rotulo">Panel de control · Turno Tarde y Mañana</p>
+            <h1 className="font-display text-2xl leading-tight font-semibold text-perla-50">
+              Registro de Asistencia
+            </h1>
+            <p className="truncate text-sm text-perla-300">Administrador: {correo}</p>
           </div>
         </header>
 
@@ -245,7 +288,7 @@ function Panel({
         )}
 
         {/* Resumen */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section id="resumen" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 scroll-mt-8">
           <Tarjeta rotulo="Cuentas creadas" valor={resumen.cuentas} detalle="Registradas en la app" />
           <Tarjeta
             rotulo="Ya marcaron"
@@ -263,7 +306,7 @@ function Panel({
         </section>
 
         {/* Gráficos */}
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+        <section id="graficos" className="mt-6 grid gap-6 lg:grid-cols-2 scroll-mt-8">
           <article className="panel rounded-xl p-6">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Cuentas por programa
@@ -322,7 +365,7 @@ function Panel({
         </section>
 
         {/* Detalle por programa */}
-        <section className="panel mt-6 rounded-xl p-6">
+        <section id="programas" className="panel mt-6 rounded-xl p-6 scroll-mt-8">
           <h2 className="font-display text-lg font-semibold text-perla-50">
             Detalle por programa
           </h2>
@@ -404,7 +447,7 @@ function Panel({
         </section>
 
         {/* Tabla */}
-        <section className="panel mt-6 rounded-xl p-6">
+        <section id="practicantes" className="panel mt-6 rounded-xl p-6 scroll-mt-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Detalle de practicantes ({filas.length})

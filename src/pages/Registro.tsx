@@ -192,6 +192,13 @@ function Formulario({
     const errorApellidos = validarNombre(apellidos)
     if (errorApellidos) nuevos.apellidos = errorApellidos
 
+    if (
+      nombres.trim().length > 0 &&
+      nombres.trim().toLowerCase() === apellidos.trim().toLowerCase()
+    ) {
+      nuevos.apellidos = 'Los apellidos no pueden ser iguales a los nombres.'
+    }
+
     if (!programa) nuevos.programa = 'Selecciona tu programa.'
     if (programa && aplicaCiclo(programa) && ciclo === '')
       nuevos.ciclo = 'Selecciona tu ciclo.'
