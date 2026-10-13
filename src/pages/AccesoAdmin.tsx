@@ -5,7 +5,6 @@ import { MarcoAcceso } from '../components/MarcoAcceso'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
 import { supabase } from '../lib/supabase'
-import fondo from '../assets/fondo/bosqueTenue.jpg'
 
 /** Pantalla de acceso del panel, con el mismo diseño que el login de practicantes. */
 export function AccesoAdmin() {
@@ -48,24 +47,18 @@ export function AccesoAdmin() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
-      <img
-        src={fondo}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 h-full w-full object-cover"
-      />
-      <div className="pointer-events-none fixed inset-0 bg-ink-950/70" aria-hidden="true" />
+    <div className="fondo-ie relative flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="velo-ie" aria-hidden="true" />
 
       <div className="relative w-full max-w-md">
         <MarcoAcceso
-          rotulo="Panel de control · Acceso restringido"
+          rotulo="I.E Jimenez Pimentel"
           titulo="Administración"
-          subtitulo="Solo para docentes y coordinadores autorizados"
+          subtitulo="Panel de control · Acceso restringido"
         />
 
-        <main className="relative rounded-2xl border border-white/20 bg-white/5 p-7 shadow-2xl backdrop-blur-xl sm:p-9">
-          <form onSubmit={manejarEnvio} noValidate className="mt-2 space-y-5">
+        <main className="panel-vidrio rounded-2xl p-7 sm:p-9">
+          <form onSubmit={manejarEnvio} noValidate className="mt-2 space-y-6">
             <div className="relative">
               <input
                 id="correo-admin"
@@ -76,12 +69,9 @@ export function AccesoAdmin() {
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
                 placeholder=" "
-                className="peer w-full border-b-2 border-white/25 bg-transparent pt-5 pb-1.5 text-perla-50 outline-none transition-colors placeholder-transparent focus:border-oro-400"
+                className="campo-flotante"
               />
-              <label
-                htmlFor="correo-admin"
-                className="pointer-events-none absolute top-5 left-0 text-sm text-perla-300/70 transition-all duration-300 peer-focus:-top-3 peer-focus:text-xs peer-focus:text-oro-400 peer-[:not(:placeholder-shown)]:-top-3 peer-[:not(:placeholder-shown)]:text-xs"
-              >
+              <label htmlFor="correo-admin" className="etiqueta-flotante">
                 Usuario o correo *
               </label>
             </div>
@@ -96,12 +86,9 @@ export function AccesoAdmin() {
                 value={clave}
                 onChange={(e) => setClave(e.target.value)}
                 placeholder=" "
-                className="peer w-full border-b-2 border-white/25 bg-transparent pt-5 pb-1.5 pr-10 text-perla-50 outline-none transition-colors placeholder-transparent focus:border-oro-400"
+                className="campo-flotante pr-10"
               />
-              <label
-                htmlFor="clave-admin"
-                className="pointer-events-none absolute top-5 left-0 text-sm text-perla-300/70 transition-all duration-300 peer-focus:-top-3 peer-focus:text-xs peer-focus:text-oro-400 peer-[:not(:placeholder-shown)]:-top-3 peer-[:not(:placeholder-shown)]:text-xs"
-              >
+              <label htmlFor="clave-admin" className="etiqueta-flotante">
                 Contraseña *
               </label>
               <button
@@ -133,7 +120,7 @@ export function AccesoAdmin() {
             <button
               type="submit"
               disabled={enviando}
-              className="w-full rounded-xl bg-gradient-to-r from-oro-500 to-oro-400 py-3.5 font-semibold text-ink-950 shadow-lg shadow-oro-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-oro-500/40 hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+              className="boton-oro w-full rounded-xl py-3.5"
             >
               {enviando ? (
                 <span className="mx-auto block h-5 w-5 animate-spin rounded-full border-2 border-ink-950 border-t-transparent" />

@@ -85,8 +85,9 @@ export function Admin() {
   if (!permitido) return <SinPermiso correo={correo} salir={salir} />
   if (!datos) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center px-4">
-        <div className="panel relative w-full max-w-md rounded-xl p-7 text-center">
+      <div className="fondo-ie relative flex min-h-screen items-center justify-center px-4">
+        <div className="velo-ie" aria-hidden="true" />
+        <div className="panel-vidrio relative w-full max-w-md rounded-2xl p-7 text-center">
           <p className="text-sm text-perla-200">{error || 'Cargando panel…'}</p>
           <button type="button" onClick={() => void cargar()} className="boton-oro mt-5">
             Reintentar
@@ -248,8 +249,8 @@ function Panel({
   ]
 
   return (
-    <div className="relative min-h-screen pl-24 pr-4 py-8">
-      <div className="textura pointer-events-none fixed inset-0" aria-hidden="true" />
+    <div className="fondo-ie relative min-h-screen pl-24 pr-4 py-8">
+      <div className="velo-ie" aria-hidden="true" />
 
       <Dock
         items={itemsDock}
@@ -307,7 +308,7 @@ function Panel({
 
         {/* Gráficos */}
         <section id="graficos" className="mt-6 grid gap-6 lg:grid-cols-2 scroll-mt-8">
-          <article className="panel rounded-xl p-6">
+          <article className="panel-vidrio rounded-xl p-6">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Cuentas por programa
             </h2>
@@ -323,7 +324,7 @@ function Panel({
             </div>
           </article>
 
-          <article className="panel rounded-xl p-6">
+          <article className="panel-vidrio rounded-xl p-6">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Marcaron vs. sin marcar
             </h2>
@@ -339,7 +340,7 @@ function Panel({
             </div>
           </article>
 
-          <article className="panel rounded-xl p-6">
+          <article className="panel-vidrio rounded-xl p-6">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Cuentas por ciclo (marcaron / total)
             </h2>
@@ -351,7 +352,7 @@ function Panel({
             </div>
           </article>
 
-          <article className="panel rounded-xl p-6">
+          <article className="panel-vidrio rounded-xl p-6">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Registros por día
             </h2>
@@ -365,7 +366,7 @@ function Panel({
         </section>
 
         {/* Detalle por programa */}
-        <section id="programas" className="panel mt-6 rounded-xl p-6 scroll-mt-8">
+        <section id="programas" className="panel-vidrio mt-6 rounded-xl p-6 scroll-mt-8">
           <h2 className="font-display text-lg font-semibold text-perla-50">
             Detalle por programa
           </h2>
@@ -447,7 +448,7 @@ function Panel({
         </section>
 
         {/* Tabla */}
-        <section id="practicantes" className="panel mt-6 rounded-xl p-6 scroll-mt-8">
+        <section id="practicantes" className="panel-vidrio mt-6 rounded-xl p-6 scroll-mt-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Detalle de practicantes ({filas.length})
@@ -562,16 +563,18 @@ function Panel({
 
 function PantallaCarga() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <span className="h-9 w-9 animate-spin rounded-full border-2 border-oro-500 border-t-transparent" />
+    <div className="fondo-ie relative flex min-h-screen items-center justify-center">
+      <div className="velo-ie" aria-hidden="true" />
+      <span className="relative h-9 w-9 animate-spin rounded-full border-2 border-oro-500 border-t-transparent" />
     </div>
   )
 }
 
 function SinPermiso({ correo, salir }: { correo: string; salir: () => Promise<void> }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4">
-      <div className="panel relative w-full max-w-md rounded-xl p-7 text-center">
+    <div className="fondo-ie relative flex min-h-screen items-center justify-center px-4">
+      <div className="velo-ie" aria-hidden="true" />
+      <div className="panel-vidrio relative w-full max-w-md rounded-2xl p-7 text-center">
         <div className="flex justify-center">
           <Escudo alto="h-14" />
         </div>
@@ -606,7 +609,7 @@ function Tarjeta({
   acento?: string
 }) {
   return (
-    <div className="panel rounded-xl p-5">
+    <div className="panel-vidrio rounded-xl p-5">
       <p className="rotulo">{rotulo}</p>
       <p className="font-display mt-2 text-4xl font-semibold" style={{ color: acento }}>
         {valor}

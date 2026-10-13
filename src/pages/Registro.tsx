@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom'
 import { BienvenidaModal } from '../components/BienvenidaModal'
 import { CelebracionRegistro } from '../components/CelebracionRegistro'
 import { Escudo, Ornamento } from '../components/Escudo'
-import { FondoRayos } from '../components/FondoRayos'
 import { ModalBloqueo } from '../components/ModalBloqueo'
 import SlideCommit from '../components/SlideCommit'
 import { Toast } from '../components/Toast'
@@ -256,9 +255,8 @@ function Formulario({
   }
 
   return (
-    <div className="relative min-h-screen px-4 py-8">
-      <FondoRayos />
-      <div className="textura pointer-events-none fixed inset-0" aria-hidden="true" />
+    <div className="fondo-ie relative min-h-screen px-4 py-8">
+      <div className="velo-ie" aria-hidden="true" />
 
       <BienvenidaModal
         visible={bienvenida && !yaRegistro}
@@ -305,7 +303,7 @@ function Formulario({
           <div className="flex items-center gap-4">
             <Escudo alto="h-14" />
             <div>
-              <p className="rotulo">I.E. Superior N.º P · Tarapoto</p>
+              <p className="rotulo">I.E Jimenez Pimentel · Tarapoto</p>
               <h1 className="font-display text-2xl leading-tight font-semibold text-perla-50">
                 Registro de Asistencia
               </h1>
@@ -315,7 +313,7 @@ function Formulario({
           <button
             type="button"
             onClick={() => void salir()}
-            className="shrink-0 rounded border border-ink-600 bg-ink-900/70 px-3 py-2 text-xs font-semibold tracking-[0.14em] text-perla-200 uppercase transition hover:border-oro-500/60 hover:text-oro-400"
+            className="shrink-0 rounded border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.14em] text-perla-200 uppercase transition hover:border-oro-500/60 hover:text-oro-400"
           >
             Salir
           </button>
@@ -324,7 +322,7 @@ function Formulario({
         <form
           onSubmit={evitarEnvio}
           noValidate
-          className="panel rounded-xl p-7"
+          className="panel-vidrio rounded-2xl p-7"
         >
           <h2 className="font-display text-xl font-semibold text-perla-50">
             Datos del practicante

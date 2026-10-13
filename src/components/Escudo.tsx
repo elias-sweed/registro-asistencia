@@ -7,7 +7,7 @@ export function Escudo({ alto = 'h-20' }: { alto?: string }) {
     >
       <img
         src={logo}
-        alt="Escudo de la Institución Educativa Superior N.° P"
+        alt="Escudo de la I.E Jimenez Pimentel"
         className="h-full w-full object-contain"
       />
       <span

@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { CampoClave } from '../components/CampoClave'
 import { MarcoAcceso } from '../components/MarcoAcceso'
-import { FondoRayos } from '../components/FondoRayos'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
 import { supabase } from '../lib/supabase'
@@ -56,8 +54,9 @@ export function Login() {
 
   if (cargando || (sesion && esAdmin === null)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <span className="h-9 w-9 animate-spin rounded-full border-2 border-oro-500 border-t-transparent" />
+      <div className="fondo-ie relative flex min-h-screen items-center justify-center">
+        <div className="velo-ie" aria-hidden="true" />
+        <span className="relative h-9 w-9 animate-spin rounded-full border-2 border-oro-500 border-t-transparent" />
       </div>
     )
   }
@@ -119,7 +118,10 @@ export function Login() {
     }
 
     const nombreCompleto = `${nombre} ${apellidos}`.trim().toLowerCase().replace(/\s+/g, '')
-    if (esRegistro && clave.toLowerCase().replace(/[^a-z]/g, '') === nombreCompleto.replace(/[^a-z]/g, '')) {
+    if (
+      esRegistro &&
+      clave.toLowerCase().replace(/[^a-z]/g, '') === nombreCompleto.replace(/[^a-z]/g, '')
+    ) {
       setError('La contraseña no puede ser igual a tu nombre.')
       return
     }
@@ -175,18 +177,17 @@ export function Login() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
-      <FondoRayos />
-      <div className="textura pointer-events-none fixed inset-0" aria-hidden="true" />
+    <div className="fondo-ie relative flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="velo-ie" aria-hidden="true" />
 
       <div className="relative w-full max-w-md">
         <MarcoAcceso
-          rotulo="Institución Educativa Superior N.º P"
+          rotulo="I.E Jimenez Pimentel"
           titulo="Registro de Asistencia"
           subtitulo="Superación · Estudio · Trabajo — Tarapoto"
         />
 
-        <main className="panel rounded-xl p-7">
+        <main className="panel-vidrio rounded-2xl p-7 sm:p-9">
           <AnimatePresence mode="wait">
             <motion.div
               key={modo}
@@ -195,20 +196,17 @@ export function Login() {
               exit={{ opacity: 0, y: -14 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
             >
-              <h2 className="font-display text-center text-xl font-semibold text-perla-50">
-                {esRegistro ? 'Crear cuenta de practicante' : 'Ingresar'}
+              <h2 className="font-display text-center text-2xl font-semibold text-perla-50">
+                {esRegistro ? 'Crear cuenta' : 'Ingresar'}
               </h2>
-              <p className="mt-1 text-center text-sm text-perla-300">
+              <p className="mt-1 text-center text-sm text-perla-300/80">
                 {esRegistro
                   ? 'Nombres, apellidos y contraseña. Tu cuenta queda lista al instante.'
                   : 'Escribe tu nombre, apellidos y contraseña para marcar tu asistencia.'}
               </p>
 
-              <form onSubmit={manejarEnvio} noValidate className="mt-5 space-y-4">
-                <div>
-                  <label htmlFor="nombre" className="rotulo mb-1.5 block">
-                    Nombres *
-                  </label>
+              <form onSubmit={manejarEnvio} noValidate className="mt-7 space-y-6">
+                <div className="relative">
                   <input
                     id="nombre"
                     name="nombre"
@@ -219,15 +217,15 @@ export function Login() {
                     autoComplete="given-name"
                     value={nombre}
                     onChange={(e) => setNombre(limpiarNombre(e.target.value))}
-                    placeholder="Juan Carlos"
-                    className="campo"
+                    placeholder=" "
+                    className="campo-flotante"
                   />
+                  <label htmlFor="nombre" className="etiqueta-flotante">
+                    Nombres *
+                  </label>
                 </div>
 
-                <div>
-                  <label htmlFor="apellidos" className="rotulo mb-1.5 block">
-                    Apellidos *
-                  </label>
+                <div className="relative">
                   <input
                     id="apellidos"
                     name="apellidos"
@@ -238,43 +236,63 @@ export function Login() {
                     autoComplete="family-name"
                     value={apellidos}
                     onChange={(e) => setApellidos(limpiarNombre(e.target.value))}
-                    placeholder="Quispe Huamán"
-                    className="campo"
+                    placeholder=" "
+                    className="campo-flotante"
                   />
+                  <label htmlFor="apellidos" className="etiqueta-flotante">
+                    Apellidos *
+                  </label>
                 </div>
 
                 {esRegistro && (
-                  <div>
-                    <label className="rotulo mb-1.5 block">Tu usuario</label>
-                    <div className="campo flex items-center justify-between gap-2 bg-ink-950 py-3">
-                      <span className="truncate font-mono text-sm text-perla-200">
-                        {usuarioSugerido}
-                      </span>
-                      <span className="shrink-0 text-xs text-perla-500">@asistencia.local</span>
-                    </div>
-                    <p className="mt-1.5 text-xs text-perla-400">
-                      Así se llamará tu cuenta. Anótalo junto con tu contraseña.
-                    </p>
+                  <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2.5">
+                    <svg
+                      className="h-4 w-4 shrink-0 text-oro-400/80"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="5" width="18" height="14" rx="2" />
+                      <path d="M7 10h10M7 14h6" strokeLinecap="round" />
+                    </svg>
+                    <span className="truncate font-mono text-sm text-perla-200">
+                      {usuarioSugerido}
+                    </span>
+                    <span className="shrink-0 text-xs text-perla-500">@asistencia.local</span>
                   </div>
                 )}
+                {esRegistro && (
+                  <p className="-mt-4 text-xs text-perla-400">
+                    Así se llamará tu cuenta. Anótalo junto con tu contraseña.
+                  </p>
+                )}
 
-                <div>
-                  <label htmlFor="clave" className="rotulo mb-1.5 block">
+                <div className="relative">
+                  <input
+                    id="clave"
+                    name="clave"
+                    type="password"
+                    required
+                    minLength={6}
+                    maxLength={72}
+                    autoComplete={esRegistro ? 'new-password' : 'current-password'}
+                    value={clave}
+                    onChange={(e) => setClave(e.target.value)}
+                    placeholder=" "
+                    className="campo-flotante pr-10"
+                  />
+                  <label htmlFor="clave" className="etiqueta-flotante">
                     Contraseña *
                   </label>
-                  <CampoClave
-                    id="clave"
-                    valor={clave}
-                    alCambiar={setClave}
-                    autoComplete={esRegistro ? 'new-password' : 'current-password'}
-                    placeholder="Mínimo 6 caracteres"
-                  />
+                  <BotonVerClave id="clave" />
                   {esRegistro && (
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2.5 flex items-center gap-3">
                       <button
                         type="button"
                         onClick={sugerirClave}
-                        className="enlace text-xs"
+                        className="text-xs font-medium text-oro-400 underline decoration-oro-400/40 underline-offset-2 transition hover:text-oro-300"
                       >
                         Sugerir contraseña segura
                       </button>
@@ -282,7 +300,7 @@ export function Login() {
                         <button
                           type="button"
                           onClick={copiarClave}
-                          className="enlace text-xs"
+                          className="text-xs text-perla-300/70 transition hover:text-perla-100"
                         >
                           {copiada ? 'Copiada ✓' : 'Copiar'}
                         </button>
@@ -292,32 +310,43 @@ export function Login() {
                 </div>
 
                 {esRegistro && (
-                  <div>
-                    <label htmlFor="repetirClave" className="rotulo mb-1.5 block">
+                  <div className="relative">
+                    <input
+                      id="repetirClave"
+                      name="repetirClave"
+                      type="password"
+                      required
+                      minLength={6}
+                      maxLength={72}
+                      autoComplete="new-password"
+                      value={repetirClave}
+                      onChange={(e) => setRepetirClave(e.target.value)}
+                      placeholder=" "
+                      className="campo-flotante pr-10"
+                    />
+                    <label htmlFor="repetirClave" className="etiqueta-flotante">
                       Confirmar contraseña *
                     </label>
-                    <CampoClave
-                      id="repetirClave"
-                      valor={repetirClave}
-                      alCambiar={setRepetirClave}
-                      autoComplete="new-password"
-                      placeholder="Repite la contraseña"
-                    />
+                    <BotonVerClave id="repetirClave" />
                   </div>
                 )}
 
                 {error && (
                   <p
                     role="alert"
-                    className="rounded-lg border border-carmesi-400/40 bg-carmesi-500/10 px-3 py-2 text-sm text-perla-100"
+                    className="rounded-lg border border-carmesi-400/40 bg-carmesi-500/15 px-3 py-2 text-sm text-perla-100"
                   >
                     {error}
                   </p>
                 )}
 
-                <button type="submit" disabled={enviando} className="boton-oro">
+                <button
+                  type="submit"
+                  disabled={enviando}
+                  className="boton-oro w-full rounded-xl py-3.5"
+                >
                   {enviando ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-ink-950 border-t-transparent" />
+                    <span className="mx-auto block h-5 w-5 animate-spin rounded-full border-2 border-ink-950 border-t-transparent" />
                   ) : esRegistro ? (
                     'Crear cuenta'
                   ) : (
@@ -325,9 +354,13 @@ export function Login() {
                   )}
                 </button>
 
-                <p className="pt-1 text-center text-sm text-perla-300">
+                <p className="text-center text-sm text-perla-300/80">
                   {esRegistro ? '¿Ya tienes cuenta?' : '¿Primera vez aquí?'}{' '}
-                  <button type="button" onClick={cambiarModo} className="enlace">
+                  <button
+                    type="button"
+                    onClick={cambiarModo}
+                    className="font-medium text-oro-400 transition hover:text-oro-300"
+                  >
                     {esRegistro ? 'Ingresar' : 'Crear cuenta'}
                   </button>
                 </p>
@@ -336,15 +369,42 @@ export function Login() {
           </AnimatePresence>
         </main>
 
-        <p className="mt-5 text-center text-sm text-perla-300">
+        <p className="mt-5 text-center text-sm text-perla-300/60">
           ¿No puedes entrar? Avisa al coordinador de la institución.
         </p>
 
-        <p className="mt-2 text-center text-xs leading-relaxed text-perla-400">
+        <p className="mt-2 text-center text-xs leading-relaxed text-perla-400/50">
           Todos los campos son obligatorios · La fecha y hora se registran automáticamente
         </p>
       </div>
     </div>
+  )
+}
+
+function BotonVerClave({ id }: { id: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const input = document.getElementById(id) as HTMLInputElement
+        input.type = input.type === 'password' ? 'text' : 'password'
+      }}
+      aria-label="Ver contraseña"
+      title="Ver contraseña"
+      className="absolute top-4 right-0 rounded p-1.5 text-perla-300/60 transition hover:text-oro-400 focus:text-oro-400 focus:outline-none"
+    >
+      <svg
+        className="h-4.5 w-4.5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        aria-hidden="true"
+      >
+        <path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7s-9-4.5-10-7z" strokeLinecap="round" />
+        <circle cx="12" cy="12" r="3" strokeLinecap="round" />
+      </svg>
+    </button>
   )
 }
 
