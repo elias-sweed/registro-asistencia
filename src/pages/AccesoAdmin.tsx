@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { MarcoAcceso } from '../components/MarcoAcceso'
 import { useAuth } from '../context/authContext'
 import { esAdministrador } from '../lib/admin'
@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 
 /** Pantalla de acceso del panel, con el mismo diseño que el login de practicantes. */
 export function AccesoAdmin() {
+  const navegar = useNavigate()
   const { correo: correoSesion } = useAuth()
   const [correo, setCorreo] = useState('')
   const [clave, setClave] = useState('')
@@ -19,7 +20,7 @@ export function AccesoAdmin() {
     setError('')
 
     if (!correo.trim() || clave.length < 6) {
-      setError('Completa tu usuario y contraseña.')
+      setError('Completa tu correo y contraseña.')
       return
     }
 
@@ -32,7 +33,11 @@ export function AccesoAdmin() {
     })
 
     if (errorIngreso || !data.session) {
-      setError('Usuario o contraseña incorrectos.')
+      setError(
+        /Invalid login credentials/i.test(leerMensaje(errorIngreso))
+          ? 'Correo o contraseña incorrectos.'
+          : `No se pudo entrar: ${leerMensaje(errorIngreso)}`,
+      )
       setEnviando(false)
       return
     }
@@ -40,10 +45,15 @@ export function AccesoAdmin() {
     const ok = await esAdministrador(data.session.user.email ?? '')
     if (!ok) {
       await supabase.auth.signOut()
-      setError('Esa cuenta no tiene acceso al panel de administrador.')
+      setError(
+        `La cuenta ${correoLimpio} existe pero no tiene acceso al panel. Agrégala en la tabla administradores de Supabase o entra con la cuenta del coordinador.`,
+      )
       setEnviando(false)
       return
     }
+
+    // Entramos al panel.
+    navegar('/admin', { replace: true })
   }
 
   return (
@@ -132,10 +142,7 @@ export function AccesoAdmin() {
         </main>
 
         <p className="mt-5 text-center text-sm text-perla-300/60">
-          ¿Eres practicante?{' '}
-          <Link to="/login" className="text-oro-400 transition hover:text-oro-300">
-            Ingresa aquí
-          </Link>
+          ¿Eres practicante? Cierra esta página y entra por el inicio.
         </p>
 
         {correoSesion && (
@@ -146,4 +153,14 @@ export function AccesoAdmin() {
       </div>
     </div>
   )
+}
+
+/** Los errores de Supabase no siempre son instancias de Error. */
+function leerMensaje(fallo: unknown): string {
+  if (!fallo) return 'error desconocido'
+  if (typeof fallo === 'string') return fallo
+  if (fallo instanceof Error) return fallo.message
+  if (typeof fallo === 'object' && 'message' in fallo)
+    return String((fallo as { message?: unknown }).message ?? 'error desconocido')
+  return 'error desconocido'
 }

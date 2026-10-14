@@ -56,19 +56,23 @@ Todos los campos son obligatorios y se validan en el cliente y en la base de dat
 
 ## Panel de administrador
 
-`/login/admin` (también `/admin`) muestra el control de la asistencia:
+`/admin` muestra el control de la asistencia. Si no hay sesión abierta, esa misma pantalla
+pide el correo y la contraseña del administrador.
 
 - **Tarjetas:** cuentas creadas, ya marcaron, sin marcar y las que marcaron hoy.
 - **Gráficos:** cuentas por programa (dona), marcando vs. sin marcar (dona), cuentas por ciclo
   (barras) y registros por día (columnas). Todos con leyenda y porcentaje.
 - **Tabla** con filtros *Todos / Marcaron / Sin marcar*: correo, nombre, programa, ciclo,
   estado y fecha.
+- **Dock** a la izquierda para saltar a cada sección, actualizar y salir.
 
 ### Configurar el acceso
 
 1. Crea el usuario en **Supabase → Authentication → Users** (marca *Auto Confirm User*).
 2. Ejecuta `supabase/admin.sql` en el SQL Editor.
-3. Dale permisos de administrador (descomenta y edita esta línea del script):
+3. Ejecuta `supabase/admin-arreglo.sql` (deja la comparación de correos sin distinguir
+   mayúsculas) y revisa la consulta del final: **tu correo tiene que aparecer en la lista**.
+4. Si no aparece, da de alta al administrador descomentando el bloque del punto 2:
 
 ```sql
 insert into public.administradores (correo, nombre) values
@@ -79,12 +83,17 @@ on conflict (correo) do update set activo = true, nombre = excluded.nombre;
 Solo esos correos pueden ver el panel. Si un administrador entra por `/login` es enviado
 automáticamente al dashboard, y nunca ve el formulario de asistencia.
 
+Si una cuenta existe pero no tiene acceso, `/admin` lo explica y permite cambiar de cuenta sin
+salir de la página.
+
 ## Estilo
 
 Tema **negro vintage premium** con textura de papel, detalles en oro y tipografía
 **Playfair Display** (títulos) + **Lora** (texto). El escudo se usa en
-`src/assets/logo/logo.png` y de fondo hay un lienzo WebGL con **rayos de luz dorados**
-(`LightRays` de React Bits, sobre `ogl`).
+`src/assets/logo/logo.png` y el fondo de todas las pantallas es
+`src/assets/fondo/bosqueTenue.jpg` con un velo oscuro encima. Las clases
+`.fondo-ie`, `.velo-ie`, `.panel-vidrio`, `.campo-flotante` y `.etiqueta-flotante`
+están en `src/index.css`.
 
 ## 1. Crear las tablas
 
@@ -160,20 +169,22 @@ src/
   components/SplitFlapText.tsx    tablero de letras (React Bits)
   components/CampoClave.tsx      contraseña con ver/ocultar
   components/Escudo.tsx          escudo y ornamentos
-  components/FondoRayos.tsx     fondo WebGL con rayos de luz
-  components/LightRays.tsx      rayos (React Bits)
+  components/Dock.tsx            dock macOS del panel de administrador
   components/SlideCommit.tsx    control deslizante de confirmación (React Bits)
   components/Toast.tsx           notificaciones
   context/                       sesión de Supabase
   lib/                           cliente Supabase, validacion y constantes
   pages/Login.tsx                acceso con correo y contraseña
   pages/Registro.tsx             formulario de asistencia
+  pages/Admin.tsx                panel de control
+  pages/AccesoAdmin.tsx          acceso al panel
   pages/SinConfigurar.tsx        aviso si falta el .env
 supabase/schema.sql                script de creación de tablas
 supabase/migracion-programas.sql   migración de ciclos I-IV a programas SENATI/UCV/Docente API
 supabase/por-cuenta.sql            un solo registro por cuenta (sin bloqueo por IP)
 supabase/turnos.sql                agrega el turno MANANA y el parámetro p_turno al RPC
 supabase/admin.sql                 panel de administrador
+supabase/admin-arreglo.sql         acceso al panel sin distinguir mayúsculas + comprobación
 ```
 
 ## Instalar los scripts de la base de datos
@@ -185,3 +196,4 @@ En **Supabase → SQL Editor**, ejecuta en este orden:
 3. `supabase/por-cuenta.sql`
 4. **`supabase/turnos.sql`** ← obligatorio para poder elegir Mañana o Tarde
 5. `supabase/admin.sql`
+6. **`supabase/admin-arreglo.sql`** ← revisa que tu correo aparezca en la lista del final

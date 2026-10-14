@@ -571,6 +571,8 @@ function PantallaCarga() {
 }
 
 function SinPermiso({ correo, salir }: { correo: string; salir: () => Promise<void> }) {
+  const [cambiando, setCambiando] = useState(false)
+
   return (
     <div className="fondo-ie relative flex min-h-screen items-center justify-center px-4">
       <div className="velo-ie" aria-hidden="true" />
@@ -586,12 +588,34 @@ function SinPermiso({ correo, salir }: { correo: string; salir: () => Promise<vo
           La cuenta <span className="font-mono text-xs">{correo}</span> no tiene permiso para ver
           el panel.
         </p>
-        <p className="mt-3 text-xs text-perla-400">
-          Para darte de alta, agrega tu correo en la tabla <code>administradores</code> de Supabase.
+        <p className="mt-3 text-xs leading-relaxed text-perla-400">
+          Para darle acceso, en Supabase agrega ese correo en la tabla{' '}
+          <code className="text-oro-400">administradores</code> y vuelve a entrar.
         </p>
-        <button type="button" onClick={() => void salir()} className="boton-oro mt-5">
-          Volver al inicio
-        </button>
+
+        {cambiando ? (
+          <p className="mt-4 text-sm text-perla-300">Cambiando de cuenta…</p>
+        ) : (
+          <div className="mt-5 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCambiando(true)
+                void salir()
+              }}
+              className="boton-oro w-full rounded-xl py-3"
+            >
+              Entrar con otra cuenta
+            </button>
+            <button
+              type="button"
+              onClick={() => void salir()}
+              className="rounded border border-white/20 bg-white/5 px-4 py-2.5 text-sm text-perla-200 transition hover:border-oro-500/60 hover:text-oro-400"
+            >
+              Salir de la sesión
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
