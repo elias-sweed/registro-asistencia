@@ -60,14 +60,24 @@ Todos los campos son obligatorios y se validan en el cliente y en la base de dat
 pide el correo y la contraseña del administrador.
 
 - **Tarjetas:** cuentas creadas, ya marcaron, sin marcar y las que marcaron hoy.
-- **Gráficos:** cuentas por programa (dona), marcando vs. sin marcar (dona), cuentas por ciclo
-  (barras) y registros por día (columnas). Todos con leyenda y porcentaje.
+- **Gráficos interactivos:** todos se pueden apagar y encender con un clic, tanto en la
+  figura como en su leyenda. Al ocultar elementos los porcentajes se recalculan sobre lo
+  que queda visible, y aparece un enlace para volver a mostrarlos.
+  - *Marcaron vs. sin marcar* y *Cuentas por programa* (donas con separación entre porciones).
+  - *Cuentas por ciclo* (barras, con «3 de 5 marcaron»).
+  - *Asistencia por turno* (barras, una por turno).
+  - *Registros por día* (columnas, el día más reciente va resaltado).
+- **Avance por programa:** una barra por programa con cuántos marcaron de cuántos son.
 - **Tabla** con filtros *Estado* (Todos / Marcaron / Sin marcar) y *Día de la asistencia*
   (Hoy / Ayer / Antes de ayer / Últimos 7 días / Todo), cada opción con su contador.
   Muestra el nombre del practicante con su correo debajo, programa, ciclo, turno, estado,
   cuándo creó su cuenta y cuándo marcó asistencia. Las fechas se leen de un vistazo
   («Hoy · 09:15», «Ayer · 08:02») y usan la hora de **Lima**.
-- **Dock** a la izquierda para saltar a cada sección, actualizar y salir.
+- **Dock inferior** para saltar a cada sección, actualizar y salir.
+
+Las tarjetas y paneles del panel de administrador usan las clases `.panel-admin` y
+`.panel-admin-fuerte`, más oscuras y difuminadas que las de las pantallas de acceso para que
+las cifras se lean sin ruido de fondo.
 
 ### Configurar el acceso
 

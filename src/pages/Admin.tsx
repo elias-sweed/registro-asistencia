@@ -26,6 +26,11 @@ const COLORES: Record<string, string> = {
   SIN_DATO: '#8b7d66',
 }
 
+const COLORES_TURNO: Record<string, string> = {
+  'Mañana': '#4a7fb5',
+  'Tarde': '#c9a227',
+}
+
 type Filtro = 'todos' | 'marcaron' | 'pendientes'
 
 type FiltroDia = 'todo' | 'hoy' | 'ayer' | 'anteayer' | 'semana'
@@ -58,7 +63,6 @@ export function Admin() {
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [dia, setDia] = useState<FiltroDia>('todo')
   const [busqueda, setBusqueda] = useState('')
-  const [programaAbierto, setProgramaAbierto] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
     const ok = await esAdministrador(correo)
@@ -99,7 +103,7 @@ export function Admin() {
     return (
       <div className="fondo-ie relative flex min-h-screen items-center justify-center px-4">
         <div className="velo-ie" aria-hidden="true" />
-        <div className="panel-vidrio relative w-full max-w-md rounded-2xl p-7 text-center">
+        <div className="panel-admin relative w-full max-w-md rounded-2xl p-7 text-center">
           <p className="text-sm text-perla-200">{error || 'Cargando panel…'}</p>
           <button type="button" onClick={() => void cargar()} className="boton-oro mt-5">
             Reintentar
@@ -120,8 +124,6 @@ export function Admin() {
       setDia={setDia}
       busqueda={busqueda}
       setBusqueda={setBusqueda}
-      programaAbierto={programaAbierto}
-      setProgramaAbierto={setProgramaAbierto}
       salir={salir}
       recargar={() => void cargar()}
     />
@@ -138,8 +140,6 @@ function Panel({
   setDia,
   busqueda,
   setBusqueda,
-  programaAbierto,
-  setProgramaAbierto,
   salir,
   recargar,
 }: {
@@ -152,8 +152,6 @@ function Panel({
   setDia: (v: FiltroDia) => void
   busqueda: string
   setBusqueda: (v: string) => void
-  programaAbierto: string | null
-  setProgramaAbierto: (v: string | null) => void
   salir: () => Promise<void>
   recargar: () => void
 }) {
@@ -247,8 +245,9 @@ function Panel({
     .filter((f) => f.ciclo > 0)
     .sort((a, b) => a.ciclo - b.ciclo)
     .map((f) => ({
-      etiqueta: `Ciclo ${f.ciclo} · ${f.marcaron}/${f.total}`,
+      etiqueta: `Ciclo ${f.ciclo}`,
       valor: f.total,
+      detalle: `${f.marcaron} de ${f.total} marcaron`,
       color: f.ciclo <= 6 ? '#c9a227' : '#4a7fb5',
     }))
 
@@ -256,6 +255,23 @@ function Panel({
     etiqueta: f.dia.slice(5).split('-').reverse().join('/'),
     valor: f.total,
   }))
+
+  // La asistencia por turno se cuenta aqui porque cada registro marcado ya
+  // trae su turno.
+  const porTurno = useMemo(() => {
+    const cuenta = new Map<string, number>()
+    for (const fila of marcaron) {
+      const clave = textoTurno(fila.turno)
+      cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1)
+    }
+    return [...cuenta.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([etiqueta, valor]) => ({
+        etiqueta,
+        valor,
+        color: COLORES_TURNO[etiqueta] ?? '#8b7d66',
+      }))
+  }, [marcaron])
 
   const porcentajeMarcaron =
     resumen.cuentas > 0 ? Math.round((resumen.marcaron / resumen.cuentas) * 100) : 0
@@ -294,12 +310,12 @@ function Panel({
   ]
 
   return (
-    <div className="fondo-ie relative min-h-screen pl-24 pr-4 py-8">
+    <div className="fondo-ie relative min-h-screen px-4 pt-8 pb-40">
       <div className="velo-ie" aria-hidden="true" />
 
       <Dock
         items={itemsDock}
-        position="left"
+        position="bottom"
         theme="dark"
         baseItemSize={50}
         magnification={70}
@@ -319,7 +335,7 @@ function Panel({
         <header className="mb-6 flex flex-wrap items-center gap-4">
           <Escudo alto="h-14" />
           <div>
-            <p className="rotulo">Panel de control · Turno Tarde y Mañana</p>
+            <p className="rotulo">Panel de control · Turnos Mañana y Tarde</p>
             <h1 className="font-display text-2xl leading-tight font-semibold text-perla-50">
               Registro de Asistencia
             </h1>
@@ -334,7 +350,7 @@ function Panel({
         )}
 
         {/* Resumen */}
-        <section id="resumen" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 scroll-mt-8">
+        <section id="resumen" className="grid scroll-mt-8 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Tarjeta rotulo="Cuentas creadas" valor={resumen.cuentas} detalle="Registradas en la app" />
           <Tarjeta
             rotulo="Ya marcaron"
@@ -352,24 +368,8 @@ function Panel({
         </section>
 
         {/* Gráficos */}
-        <section id="graficos" className="mt-6 grid gap-6 lg:grid-cols-2 scroll-mt-8">
-          <article className="panel-vidrio rounded-xl p-6">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Cuentas por programa
-            </h2>
-            <div className="mt-3">
-              <Ornamento />
-            </div>
-            <div className="mt-5">
-              <GraficoDona
-                segmentos={segmentosPrograma}
-                centroValor={String(resumen.cuentas)}
-                centroTexto="Cuentas"
-              />
-            </div>
-          </article>
-
-          <article className="panel-vidrio rounded-xl p-6">
+        <section id="graficos" className="mt-6 grid scroll-mt-8 gap-6 lg:grid-cols-2">
+          <article className="panel-admin rounded-xl p-6">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Marcaron vs. sin marcar
             </h2>
@@ -385,9 +385,25 @@ function Panel({
             </div>
           </article>
 
-          <article className="panel-vidrio rounded-xl p-6">
+          <article className="panel-admin rounded-xl p-6">
             <h2 className="font-display text-lg font-semibold text-perla-50">
-              Cuentas por ciclo (marcaron / total)
+              Cuentas por programa
+            </h2>
+            <div className="mt-3">
+              <Ornamento />
+            </div>
+            <div className="mt-5">
+              <GraficoDona
+                segmentos={segmentosPrograma}
+                centroValor={String(resumen.cuentas)}
+                centroTexto="Cuentas"
+              />
+            </div>
+          </article>
+
+          <article className="panel-admin rounded-xl p-6">
+            <h2 className="font-display text-lg font-semibold text-perla-50">
+              Cuentas por ciclo
             </h2>
             <div className="mt-3">
               <Ornamento />
@@ -397,7 +413,25 @@ function Panel({
             </div>
           </article>
 
-          <article className="panel-vidrio rounded-xl p-6">
+          <article className="panel-admin rounded-xl p-6">
+            <h2 className="font-display text-lg font-semibold text-perla-50">
+              Asistencia por turno
+            </h2>
+            <div className="mt-3">
+              <Ornamento />
+            </div>
+            <div className="mt-5">
+              {porTurno.length > 0 ? (
+                <GraficoBarras datos={porTurno} />
+              ) : (
+                <p className="text-sm text-perla-400">
+                  Todavía nadie ha registrado asistencia.
+                </p>
+              )}
+            </div>
+          </article>
+
+          <article className="panel-admin rounded-xl p-6 lg:col-span-2">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Registros por día
             </h2>
@@ -405,87 +439,56 @@ function Panel({
               <Ornamento />
             </div>
             <div className="mt-5">
-              <GraficoColumnas datos={dias} />
+              <GraficoColumnas datos={dias} destacarUltimo />
             </div>
           </article>
         </section>
 
         {/* Detalle por programa */}
-        <section id="programas" className="panel-vidrio mt-6 rounded-xl p-6 scroll-mt-8">
-          <h2 className="font-display text-lg font-semibold text-perla-50">
-            Detalle por programa
-          </h2>
+        <section id="programas" className="panel-admin mt-6 rounded-xl p-6 scroll-mt-8">
+          <h2 className="font-display text-lg font-semibold text-perla-50">Avance por programa</h2>
           <div className="mt-3">
             <Ornamento />
           </div>
 
-          <ul className="mt-5 space-y-2">
+          <ul className="mt-5 space-y-4">
             {por_programa.map((fila) => {
-              const abierto = programaAbierto === fila.programa
               const falta = fila.total - fila.marcaron
+              const avance = fila.total > 0 ? Math.round((fila.marcaron / fila.total) * 100) : 0
+              const color = COLORES[fila.programa] ?? '#8b7d66'
               return (
                 <li key={fila.programa}>
-                  <button
-                    type="button"
-                    onClick={() => setProgramaAbierto(abierto ? null : fila.programa)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-ink-700 bg-ink-950/50 px-4 py-3 text-left transition hover:border-oro-500/50"
-                  >
+                  <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span
-                      className="h-3.5 w-3.5 shrink-0 rounded-sm"
-                      style={{ backgroundColor: COLORES[fila.programa] ?? '#8b7d66' }}
+                      className="h-3 w-3 shrink-0 rounded-sm"
+                      style={{ backgroundColor: color }}
                       aria-hidden="true"
                     />
-                    <span className="flex-1 text-sm font-semibold text-perla-50">
+                    <span className="text-sm font-semibold text-perla-50">
                       {textoPrograma(fila.programa as never)}
                     </span>
                     <span className="font-mono text-xs text-perla-300">
-                      {fila.marcaron} de {fila.total} marcaron
+                      {fila.marcaron} de {fila.total}
                     </span>
+                    <span className="font-mono text-xs text-perla-400">{avance}%</span>
                     <span
-                      className={`rounded px-2 py-1 text-xs font-semibold ${
+                      className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         falta === 0
                           ? 'bg-oro-500/15 text-oro-400'
                           : 'bg-carmesi-500/15 text-carmesi-400'
                       }`}
                     >
-                      {falta === 0 ? 'Completo' : `${falta} falta${falta === 1 ? '' : 'n'}`}
+                      {falta === 0
+                        ? 'Completo'
+                        : `${falta} sin marcar${falta === 1 ? '' : 's'}`}
                     </span>
-                    <span className="text-perla-400">{abierto ? '−' : '+'}</span>
-                  </button>
-
-                  {abierto && (
-                    <ul className="mt-2 space-y-1 rounded-lg border border-ink-800 bg-ink-950/40 p-3">
-                      {filas
-                        .filter((f) => f.programa === fila.programa)
-                        .map((f) => (
-                          <li
-                            key={f.correo}
-                            className="flex items-center justify-between gap-3 text-xs"
-                          >
-                            <span className="text-perla-200">
-                              {f.nombres} {f.apellidos}
-                              <span className="block text-[10px] text-perla-400">
-                                {f.correo} · Ciclo {f.ciclo ?? '—'}
-                              </span>
-                            </span>
-                            <span
-                              className={
-                                f.estado === 'marcaron'
-                                  ? 'shrink-0 text-oro-400'
-                                  : 'shrink-0 text-carmesi-400'
-                              }
-                            >
-                              {f.estado === 'marcaron'
-                                ? `Marcó · ${fechaConDia(f.fecha)}`
-                                : 'Sin marcar'}
-                            </span>
-                          </li>
-                        ))}
-                      {filas.filter((f) => f.programa === fila.programa).length === 0 && (
-                        <li className="text-xs text-perla-400">Sin practicantes.</li>
-                      )}
-                    </ul>
-                  )}
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full transition-[width] duration-500"
+                      style={{ width: `${avance}%`, backgroundColor: color }}
+                    />
+                  </div>
                 </li>
               )
             })}
@@ -493,7 +496,7 @@ function Panel({
         </section>
 
         {/* Tabla */}
-        <section id="practicantes" className="panel-vidrio mt-6 rounded-xl p-6 scroll-mt-8">
+        <section id="practicantes" className="panel-admin mt-6 rounded-xl p-6 scroll-mt-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-perla-50">
               Detalle de practicantes · {filas.length}
@@ -672,7 +675,7 @@ function SinPermiso({ correo, salir }: { correo: string; salir: () => Promise<vo
   return (
     <div className="fondo-ie relative flex min-h-screen items-center justify-center px-4">
       <div className="velo-ie" aria-hidden="true" />
-      <div className="panel-vidrio relative w-full max-w-md rounded-2xl p-7 text-center">
+      <div className="panel-admin relative w-full max-w-md rounded-2xl p-7 text-center">
         <div className="flex justify-center">
           <Escudo alto="h-14" />
         </div>
@@ -729,7 +732,7 @@ function Tarjeta({
   acento?: string
 }) {
   return (
-    <div className="panel-vidrio rounded-xl p-5">
+    <div className="panel-admin-fuerte rounded-xl p-5">
       <p className="rotulo">{rotulo}</p>
       <p className="font-display mt-2 text-4xl font-semibold" style={{ color: acento }}>
         {valor}
