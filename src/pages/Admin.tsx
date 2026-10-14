@@ -9,6 +9,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import Dock from '../components/Dock'
 import type { DockItemData } from '../components/Dock'
+import { Esqueletos } from '../components/Esqueletos'
 import { Escudo, Ornamento } from '../components/Escudo'
 import { GraficoBarras, GraficoDona } from '../components/Graficos'
 import type { Segmento } from '../components/Graficos'
@@ -102,6 +103,7 @@ export function Admin() {
   const [dia, setDia] = useState<FiltroDia>('todo')
   const [programaCiclo, setProgramaCiclo] = useState<FiltroPrograma>('TODOS')
   const [busqueda, setBusqueda] = useState('')
+  const [refrescando, setRefrescando] = useState(false)
 
   const cargar = useCallback(async () => {
     const ok = await esAdministrador(correo)
@@ -114,6 +116,17 @@ export function Admin() {
       setError('No se pudieron cargar los datos del panel.')
     }
   }, [correo])
+
+  /** El botón Actualizar sube arriba y muestra el panel cargando. */
+  const refrescar = useCallback(async () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setRefrescando(true)
+    try {
+      await cargar()
+    } finally {
+      setRefrescando(false)
+    }
+  }, [cargar])
 
   useEffect(() => {
     if (!sesion) return
@@ -164,10 +177,11 @@ export function Admin() {
       setDia={setDia}
       programaCiclo={programaCiclo}
       setProgramaCiclo={setProgramaCiclo}
+      refrescando={refrescando}
       busqueda={busqueda}
       setBusqueda={setBusqueda}
       salir={salir}
-      recargar={() => void cargar()}
+      recargar={() => void refrescar()}
     />
   )
 }
@@ -183,6 +197,7 @@ function Panel({
   setDia,
   programaCiclo,
   setProgramaCiclo,
+  refrescando,
   busqueda,
   setBusqueda,
   salir,
@@ -198,6 +213,7 @@ function Panel({
   setDia: (v: FiltroDia) => void
   programaCiclo: FiltroPrograma
   setProgramaCiclo: (v: FiltroPrograma) => void
+  refrescando: boolean
   busqueda: string
   setBusqueda: (v: string) => void
   salir: () => Promise<void>
@@ -418,6 +434,15 @@ function Panel({
   const marcadosVisibles = filas.filter((f) => f.estado === 'marcaron').length
   const pendientesVisibles = filas.length - marcadosVisibles
 
+  /** "1 persona" / "14 personas",acentos y plural bien puestos. */
+  const cuenta = (n: number, singular: string, plural: string) =>
+    `${n} ${n === 1 ? singular : plural}`
+
+  const resumenLista =
+    filas.length === 0
+      ? 'En esta vista no hay ninguna persona registrada.'
+      : `En total hay ${cuenta(filas.length, 'persona registrada', 'personas registradas')}. ${cuenta(marcadosVisibles, 'ya registró', 'ya registraron')} su asistencia y ${cuenta(pendientesVisibles, 'todavía no la registra', 'todavía no la registran')}.`
+
   // El PDF imprime exactamente lo que se está viendo en pantalla.
   const tituloFiltro = [
     OPCIONES_DIA.find((o) => o.valor === dia)?.texto,
@@ -482,8 +507,16 @@ function Panel({
     },
     { separator: true },
     {
-      icon: <HugeiconsIcon icon={Refresh01Icon} size={22} strokeWidth={1.8} />,
+      icon: (
+        <HugeiconsIcon
+          icon={Refresh01Icon}
+          size={22}
+          strokeWidth={1.8}
+          className={refrescando ? 'animate-spin' : ''}
+        />
+      ),
       label: 'Actualizar',
+      active: refrescando,
       onClick: recargar,
     },
     {
@@ -526,6 +559,12 @@ function Panel({
             </h1>
             <p className="truncate text-sm text-perla-300">Administrador: {correo}</p>
           </div>
+          {refrescando && (
+            <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-oro-500/40 bg-oro-500/10 px-3 py-1.5 text-xs font-semibold text-oro-400">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-oro-400 border-t-transparent" />
+              Actualizando…
+            </span>
+          )}
         </header>
 
         {error && (
@@ -534,8 +573,15 @@ function Panel({
           </p>
         )}
 
-        {/* Resumen */}
-        <section id="resumen" className="grid scroll-mt-8 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {refrescando ? (
+          <Esqueletos />
+        ) : (
+          <>
+            {/* Resumen */}
+            <section
+              id="resumen"
+              className="grid scroll-mt-8 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            >
           <Tarjeta rotulo="Cuentas creadas" valor={resumen.cuentas} detalle="Registradas en la app" />
           <Tarjeta
             rotulo="Ya marcaron"
@@ -705,10 +751,8 @@ function Panel({
               <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
                 ¿Quién registró su asistencia y quién todavía no?
               </h2>
-              <p className="mt-1 text-xs text-perla-400">
-                {filas.length === 0
-                  ? 'No hay nadie en esta vista.'
-                  : `${filas.length} persona${filas.length === 1 ? '' : 's'} · ${marcadosVisibles} marcaron y ${pendientesVisibles} sin marcar`}
+              <p className="mt-1 max-w-xl text-xs leading-relaxed text-perla-400">
+                {resumenLista}
               </p>
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -996,6 +1040,8 @@ function Panel({
             </table>
           </div>
         </section>
+            </>
+          )}
 
         <ReporteImpresion filas={filas} tituloFiltro={tituloFiltro} />
 

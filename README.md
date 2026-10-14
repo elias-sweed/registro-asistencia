@@ -77,11 +77,15 @@ pide el correo y la contraseña del administrador.
   una herramienta aparte y no un practicante más. Para que funcione hay que volver a
   ejecutar `supabase/admin-arreglo.sql`, que agrega la función `correos_administradores`.
 - **¿Quién registró su asistencia y quién todavía no?**: el listado completo. Abajo del
-  título se lee cuántas personas hay en la vista, cuántas marcaron y cuántas no. En
+  título va escrito en frases: «En total hay 14 personas registradas. 11 ya registraron su
+  asistencia y 3 todavía no la registran». En
   computadora es una tabla y en celular una tarjeta por persona, para no obligar a deslizar
   la pantalla de lado a lado. Cada fila trae un botón para **eliminar la cuenta**: pide
   confirmación y borra también el registro de asistencia.
   Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez para que ese botón funcione.
+- **Botón Actualizar:** sube al principio de la página y muestra el panel cargando con
+  marcos grises (*skeletons*), con un «Actualizando…» junto al título y el ícono girando.
+  Los filtros que tuvieras aplicados se mantienen.
 - **La columna «Creó cuenta»** dice el día y la hora por separado, con hora de 12 horas:
   `Hoy`, `Ayer 13`, `Ayer 11 de octubre`, `11 de octubre de 2024`, y al lado
   `9:07 A.M.` o `2:45 P.M.`
@@ -207,6 +211,7 @@ src/
   components/Escudo.tsx          escudo y ornamentos
   components/Dock.tsx            dock macOS del panel de administrador
   components/Graficos.tsx      donas, barras y sus modos de interacción
+  components/Esqueletos.tsx     marcos de carga del panel
   components/ModalConfirmar.tsx  confirmación antes de eliminar
   components/ReporteImpresion.tsx documento que se guarda como PDF
   components/SlideCommit.tsx    control deslizante de confirmación (React Bits)
