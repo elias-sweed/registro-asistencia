@@ -17,7 +17,8 @@ import { ReporteImpresion } from '../components/ReporteImpresion'
 import { useAuth } from '../context/authContext'
 import { consultarPanel, eliminarCuenta, esAdministrador } from '../lib/admin'
 import { textoPrograma, textoTurno } from '../lib/constantes'
-import { claveDia, diasDesde, fechaConDia, fechaCorta, hoyEnLima } from '../lib/fechas'
+import { claveDia, diasDesde, fechaConDia, fechaDetallada, hoyEnLima } from '../lib/fechas'
+import { supabase } from '../lib/supabase'
 import type { AdminDatos } from '../lib/types'
 import { AccesoAdmin } from './AccesoAdmin'
 
@@ -31,6 +32,32 @@ const COLORES: Record<string, string> = {
 const COLORES_TURNO: Record<string, string> = {
   'Mañana': '#4a7fb5',
   'Tarde': '#c9a227',
+}
+
+/* El navbar con los mismos tonos del colegio: negro, oro y pergamino. */
+const TEMA_DOCK = {
+  '--dock-panel': 'rgba(12, 10, 7, 0.88)',
+  '--dock-panel-edge': 'rgba(201, 162, 39, 0.35)',
+  '--dock-panel-highlight': 'rgba(236, 217, 160, 0.1)',
+  '--dock-panel-shadow': '0 18px 40px -18px rgba(0, 0, 0, 0.9), 0 4px 14px -6px rgba(0, 0, 0, 0.6)',
+  '--dock-tile': 'linear-gradient(180deg, #241f16 0%, #16120c 100%)',
+  '--dock-tile-edge': 'rgba(201, 162, 39, 0.22)',
+  '--dock-tile-highlight': 'rgba(236, 217, 160, 0.12)',
+  '--dock-tile-shadow': '0 4px 10px -4px rgba(0, 0, 0, 0.7)',
+  '--dock-tile-active': 'linear-gradient(180deg, #6b5620 0%, #3d2f12 100%)',
+  '--dock-tile-active-edge': 'rgba(236, 217, 160, 0.55)',
+  '--dock-ink': '#ece3d2',
+  '--dock-label': '#16120c',
+  '--dock-label-ink': '#f3ead6',
+  '--dock-dot': '#c9a227',
+  '--dock-separator': 'rgba(201, 162, 39, 0.3)',
+  '--dock-press': 'brightness(0.8)',
+  '--dock-menu': 'rgba(18, 15, 10, 0.92)',
+  '--dock-menu-edge': 'rgba(201, 162, 39, 0.3)',
+  '--dock-menu-ink': '#ece3d2',
+  '--dock-menu-muted': 'rgba(236, 227, 210, 0.45)',
+  '--dock-menu-separator': 'rgba(201, 162, 39, 0.22)',
+  '--dock-menu-shadow': '0 18px 40px -14px rgba(0, 0, 0, 0.7), 0 3px 10px rgba(0, 0, 0, 0.35)',
 }
 
 type Filtro = 'todos' | 'marcaron' | 'pendientes'
@@ -179,8 +206,80 @@ function Panel({
   const [borrando, setBorrando] = useState<string | null>(null)
   const [borrandoNombre, setBorrandoNombre] = useState('')
   const [eliminando, setEliminando] = useState(false)
+  const [seccion, setSeccion] = useState('resumen')
 
-  const { resumen, por_programa, marcaron, pendientes } = datos
+  // El panel no se cuenta a si mismo: las cuentas de administrador se
+  // quitan de la lista y de todas las cifras.
+  const [correosAdmin, setCorreosAdmin] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    let vivo = true
+    void supabase
+      .rpc('correos_administradores')
+      .then(({ data }) => {
+        if (!vivo || !Array.isArray(data)) return
+        setCorreosAdmin(new Set(data.map((c) => c.toLowerCase())))
+      })
+    return () => {
+      vivo = false
+    }
+  }, [])
+
+  // Marca en el dock la sección que se está viendo.
+  useEffect(() => {
+    const ids = ['resumen', 'graficos', 'programas', 'practicantes']
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        const visible = entradas
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setSeccion(visible[0].target.id)
+      },
+      { rootMargin: '-20% 0px -70% 0px' },
+    )
+    for (const id of ids) {
+      const elemento = document.getElementById(id)
+      if (elemento) observador.observe(elemento)
+    }
+    return () => observador.disconnect()
+  }, [])
+
+  const { marcaron: marcaronCrudos, pendientes: pendientesCrudos } = datos
+
+  const marcaron = useMemo(
+    () => marcaronCrudos.filter((f) => !correosAdmin.has(f.correo.toLowerCase())),
+    [marcaronCrudos, correosAdmin],
+  )
+  const pendientes = useMemo(
+    () => pendientesCrudos.filter((f) => !correosAdmin.has(f.correo.toLowerCase())),
+    [pendientesCrudos, correosAdmin],
+  )
+
+  // Cifras recalculadas sin las cuentas de administrador, para que los
+  // indicadores cuadren con lo que se ve en la lista.
+  const resumen = useMemo(() => {
+    const cuentas = marcaron.length + pendientes.length
+    return {
+      cuentas,
+      marcaron: marcaron.length,
+      pendientes: cuentas - marcaron.length,
+      hoy: marcaron.filter((f) => f.fecha && claveDia(f.fecha) === 'hoy').length,
+    }
+  }, [marcaron, pendientes])
+
+  const por_programa = useMemo(() => {
+    const mapa = new Map<string, { total: number; marcaron: number }>()
+    for (const fila of [...marcaron, ...pendientes]) {
+      const clave = fila.programa || 'SIN_DATO'
+      const actual = mapa.get(clave) ?? { total: 0, marcaron: 0 }
+      actual.total += 1
+      if ('fecha' in fila && fila.fecha) actual.marcaron += 1
+      mapa.set(clave, actual)
+    }
+    return [...mapa.entries()]
+      .map(([programa, valor]) => ({ programa, ...valor }))
+      .sort((a, b) => b.total - a.total)
+  }, [marcaron, pendientes])
 
   const filasBase = useMemo<Fila[]>(() => {
     const marcadas: Fila[] = marcaron.map((f) => ({
@@ -365,19 +464,23 @@ function Panel({
     {
       icon: <HugeiconsIcon icon={Home01Icon} size={22} strokeWidth={1.8} />,
       label: 'Resumen',
+      active: seccion === 'resumen',
       onClick: () => scrollA('resumen'),
     },
     {
       icon: <HugeiconsIcon icon={Chart01Icon} size={22} strokeWidth={1.8} />,
       label: 'Gráficos',
+      active: seccion === 'graficos' || seccion === 'programas',
       onClick: () => scrollA('graficos'),
     },
     {
       icon: <HugeiconsIcon icon={Table01Icon} size={22} strokeWidth={1.8} />,
       label: 'Practicantes',
-      badge: resumen.pendientes > 0 ? resumen.pendientes : undefined,
+      active: seccion === 'practicantes',
+      badge: pendientes.length > 0 ? pendientes.length : undefined,
       onClick: () => scrollA('practicantes'),
     },
+    { separator: true },
     {
       icon: <HugeiconsIcon icon={Refresh01Icon} size={22} strokeWidth={1.8} />,
       label: 'Actualizar',
@@ -398,7 +501,7 @@ function Panel({
         items={itemsDock}
         position="bottom"
         theme="dark"
-        style={{ position: 'fixed' }}
+        style={{ ...TEMA_DOCK, position: 'fixed' }}
         baseItemSize={50}
         magnification={70}
         panelHeight={68}
@@ -756,7 +859,12 @@ function Panel({
                     </div>
                     <div className="col-span-2">
                       <dt className="text-perla-500">Creó cuenta</dt>
-                      <dd className="text-perla-300">{fechaCorta(f.creado_en)}</dd>
+                      <dd className="text-perla-300">
+                        {fechaDetallada(f.creado_en).dia}
+                        <span className="ml-1.5 text-perla-400">
+                          {fechaDetallada(f.creado_en).hora}
+                        </span>
+                      </dd>
                     </div>
                   </dl>
 
@@ -846,7 +954,10 @@ function Panel({
                         </span>
                       </td>
                       <td className="px-2 py-3 text-xs whitespace-nowrap text-perla-300">
-                        {fechaCorta(f.creado_en)}
+                        <span className="block">{fechaDetallada(f.creado_en).dia}</span>
+                        <span className="block text-perla-400">
+                          {fechaDetallada(f.creado_en).hora}
+                        </span>
                       </td>
                       <td
                         className={`px-2 py-3 text-xs whitespace-nowrap ${

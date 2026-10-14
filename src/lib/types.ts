@@ -82,6 +82,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      correos_administradores: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
       admin_datos: {
         Args: Record<PropertyKey, never>
         Returns: AdminDatos

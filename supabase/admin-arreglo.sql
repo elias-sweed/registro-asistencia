@@ -29,6 +29,34 @@ $$;
 revoke execute on function public.es_admin() from public, anon;
 grant execute on function public.es_admin() to authenticated;
 
+-- 1b) Correos con acceso al panel --------------------------------
+--     El panel los usa para no contarse a si mismo entre los
+--     practicantes. Si quien pregunta no es administrador, devuelve
+--     una lista vacia: asi un practicante no puede enterarse de
+--     quienes administran.
+create or replace function public.correos_administradores()
+returns text[]
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+           when exists (
+             select 1 from public.administradores
+              where lower(correo) = lower(coalesce(auth.jwt() ->> 'email', ''))
+                and activo
+           )
+           then coalesce(array_agg(lower(correo)), '{}'::text[])
+           else '{}'::text[]
+         end
+  from public.administradores
+ where activo;
+$$;
+
+revoke execute on function public.correos_administradores() from public, anon;
+grant execute on function public.correos_administradores() to authenticated;
+
 -- 2) Alta rapida de un administrador ------------------------------
 --    Edita el correo, quita el -- y ejecuta solo este bloque.
 -- insert into public.administradores (correo, nombre) values

@@ -42,6 +42,59 @@ const formatearHora = new Intl.DateTimeFormat('es', {
   hour12: false,
 })
 
+const MESES = new Intl.DateTimeFormat('es', { timeZone: ZONA, month: 'long' })
+
+/** "9:05 A.M." o "2:47 P.M." (las 00:00 salen como 12:00 A.M.). */
+export function hora12(iso: string): string {
+  // hour y minute deben pedirse juntos: por separado el minuto no sale con
+  // dos digitos y terminaba en "12:0 A.M." en vez de "12:00 A.M.".
+  const partes = new Intl.DateTimeFormat('en-US', {
+    timeZone: ZONA,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(iso))
+
+  const hora = Number(partes.find((p) => p.type === 'hour')?.value ?? '0')
+  const minuto = partes.find((p) => p.type === 'minute')?.value ?? '00'
+  const h12 = hora % 12 === 0 ? 12 : hora % 12
+  return `${h12}:${minuto} ${hora < 12 ? 'A.M.' : 'P.M.'}`
+}
+
+/**
+ * Día en palabras: "Hoy", "Ayer 13", "Ayer 11 de octubre",
+ * "11 de octubre", "11 de octubre de 2024".
+ */
+export function diaEnPalabras(iso: string, hoy = hoyEnLima()): string {
+  const fecha = new Date(iso)
+  const dias = diasDesde(iso, hoy)
+  const prefijo =
+    dias === 0 ? 'Hoy' : dias === 1 ? 'Ayer' : dias === 2 ? 'Anteayer' : null
+
+  const dia = Number(new Intl.DateTimeFormat('en-US', { timeZone: ZONA, day: '2-digit' }).format(fecha))
+  const mes = MESES.format(fecha)
+  const ahora = new Date()
+  const mesActual = MESES.format(ahora)
+  const anio = Number(new Intl.DateTimeFormat('en-US', { timeZone: ZONA, year: 'numeric' }).format(fecha))
+  const anioActual = Number(
+    new Intl.DateTimeFormat('en-US', { timeZone: ZONA, year: 'numeric' }).format(ahora),
+  )
+
+  if (prefijo) {
+    if (mes === mesActual && anio === anioActual) return `${prefijo} ${dia}`
+    return `${prefijo} ${dia} de ${mes}`
+  }
+
+  if (anio === anioActual) return `${dia} de ${mes}`
+  return `${dia} de ${mes} de ${anio}`
+}
+
+/** "Hoy" / "Ayer 13" / "11 de octubre" junto con la hora en A.M. o P.M. */
+export function fechaDetallada(iso: string | null | undefined) {
+  if (!iso) return { dia: '—', hora: '' }
+  return { dia: diaEnPalabras(iso), hora: hora12(iso) }
+}
+
 const formatearDia = new Intl.DateTimeFormat('es', {
   timeZone: ZONA,
   day: '2-digit',

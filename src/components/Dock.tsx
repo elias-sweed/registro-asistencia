@@ -141,7 +141,7 @@ const ITEM =
 const TILE = 'pointer-events-none absolute left-0 top-0 w-[var(--dock-base)] h-[var(--dock-base)] origin-top-left'
 
 const FACE =
-  'absolute inset-0 flex items-center justify-center leading-none rounded-[calc(var(--dock-base)*var(--dock-round)*0.5)] [transition:filter_0.2s_ease] group-active:[filter:var(--dock-press)] group-active:[transition-duration:0s] group-data-[open]:[filter:var(--dock-press)] group-data-[open]:[transition-duration:0s] group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--dock-accent)]'
+  'absolute inset-0 flex items-center justify-center leading-none rounded-[calc(var(--dock-base)*var(--dock-round)*0.5)] [transition:filter_0.2s_ease,background_0.2s_ease,box-shadow_0.2s_ease] group-active:[filter:var(--dock-press)] group-active:[transition-duration:0s] group-data-[open]:[filter:var(--dock-press)] group-data-[open]:[transition-duration:0s] group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--dock-accent)] group-data-[active]:[background:var(--dock-tile-active)] group-data-[active]:[box-shadow:inset_0_0_0_1px_var(--dock-tile-active-edge),0_0_20px_-6px_var(--dock-accent)]'
 
 const FACE_TILE =
   'overflow-hidden [background:var(--dock-tile)] [box-shadow:inset_0_0_0_1px_var(--dock-tile-edge),inset_0_1px_0_var(--dock-tile-highlight),var(--dock-tile-shadow)] [font-size:calc(var(--dock-base)*0.44)]'
@@ -213,6 +213,8 @@ const THEMES: Record<'dark' | 'light', Tokens> = {
     '--dock-tile-edge': 'rgba(255, 255, 255, 0.07)',
     '--dock-tile-highlight': 'rgba(255, 255, 255, 0.12)',
     '--dock-tile-shadow': '0 4px 10px -4px rgba(0, 0, 0, 0.7)',
+    '--dock-tile-active': 'linear-gradient(180deg, #4a4d5c 0%, #34313f 100%)',
+    '--dock-tile-active-edge': 'rgba(255, 255, 255, 0.28)',
     '--dock-ink': '#f4f4f5',
     '--dock-label': '#2a2731',
     '--dock-label-ink': '#f4f4f5',
@@ -235,6 +237,8 @@ const THEMES: Record<'dark' | 'light', Tokens> = {
     '--dock-tile-edge': 'rgba(24, 24, 27, 0.08)',
     '--dock-tile-highlight': 'rgba(255, 255, 255, 1)',
     '--dock-tile-shadow': '0 4px 10px -5px rgba(24, 24, 27, 0.25)',
+    '--dock-tile-active': 'linear-gradient(180deg, #e6e8ec 0%, #dcdfe5 100%)',
+    '--dock-tile-active-edge': 'rgba(24, 24, 27, 0.25)',
     '--dock-ink': '#27272a',
     '--dock-label': '#ffffff',
     '--dock-label-ink': '#18181b',
@@ -1169,6 +1173,7 @@ export default function Dock({
             aria-haspopup={item.menu?.length ? 'menu' : undefined}
             aria-expanded={item.menu?.length ? openIndex === index : undefined}
             data-open={openIndex === index ? '' : undefined}
+            data-active={item.active ? '' : undefined}
             onPointerDown={event => {
               skipRef.current = -1
               const current = menuRef.current

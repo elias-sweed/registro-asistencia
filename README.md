@@ -72,22 +72,31 @@ pide el correo y la contraseña del administrador.
   - *¿Cuántos han asistido en cada turno?* (barras, una por turno).
 - *¿Quién falta por marcar en cada programa?*: una barra por programa con cuántos marcaron
   de cuántos son.
+- **Las cuentas de administrador no se cuentan.** La cuenta del coordinador (y de los
+  docentes que administran) no aparece en la lista ni en los números, porque el panel es
+  una herramienta aparte y no un practicante más. Para que funcione hay que volver a
+  ejecutar `supabase/admin-arreglo.sql`, que agrega la función `correos_administradores`.
 - **¿Quién registró su asistencia y quién todavía no?**: el listado completo. Abajo del
   título se lee cuántas personas hay en la vista, cuántas marcaron y cuántas no. En
   computadora es una tabla y en celular una tarjeta por persona, para no obligar a deslizar
   la pantalla de lado a lado. Cada fila trae un botón para **eliminar la cuenta**: pide
   confirmación y borra también el registro de asistencia.
   Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez para que ese botón funcione.
+- **La columna «Creó cuenta»** dice el día y la hora por separado, con hora de 12 horas:
+  `Hoy`, `Ayer 13`, `Ayer 11 de octubre`, `11 de octubre de 2024`, y al lado
+  `9:07 A.M.` o `2:45 P.M.`
 - **Filtros del listado:** *Estado* (Todos / Marcaron / Sin marcar) y *Día de la asistencia*
   (Hoy / Ayer / Antes de ayer / Últimos 7 días / Todo), cada opción con su contador. Las
-  fechas se leen de un vistazo («Hoy · 09:15», «Ayer · 08:02») y usan la hora de **Lima**.
+  fechas usan la hora de **Lima**.
 - **Guardar como PDF.** El botón imprime el listado que estás viendo (respeta el día, el
   estado y la búsqueda que tengas aplicados). El documento sale con dos tablas:
   **«Sí registraron su asistencia»** y **«Todavía NO han registrado su asistencia»**, cada
   una con una columna de firma, y al final las líneas para que firmen los dos docentes
   (Manuel y Edward). En el diálogo de impresión elige «Guardar como PDF».
-- **Dock inferior fijo:** permanece pegado abajo al hacer scroll, para saltar a cada sección,
-  actualizar y salir.
+- **Dock inferior fijo:** permanece pegado abajo al hacer scroll, con los colores de la
+  institución (negro, oro y pergamino). El ícono de la sección que estás viendo queda
+  encendido en dorado, así se sabe de un vistazo dónde estás; además separa con una línea
+  la navegación de «Actualizar» y «Salir».
 
 Las tarjetas y paneles del panel de administrador usan las clases `.panel-admin` y
 `.panel-admin-fuerte`, más oscuras y difuminadas que las de las pantallas de acceso para que
