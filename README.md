@@ -62,8 +62,11 @@ pide el correo y la contraseña del administrador.
 - **Tarjetas:** cuentas creadas, ya marcaron, sin marcar y las que marcaron hoy.
 - **Gráficos:** cuentas por programa (dona), marcando vs. sin marcar (dona), cuentas por ciclo
   (barras) y registros por día (columnas). Todos con leyenda y porcentaje.
-- **Tabla** con filtros *Todos / Marcaron / Sin marcar*: correo, nombre, programa, ciclo,
-  estado y fecha.
+- **Tabla** con filtros *Estado* (Todos / Marcaron / Sin marcar) y *Día de la asistencia*
+  (Hoy / Ayer / Antes de ayer / Últimos 7 días / Todo), cada opción con su contador.
+  Muestra el nombre del practicante con su correo debajo, programa, ciclo, turno, estado,
+  cuándo creó su cuenta y cuándo marcó asistencia. Las fechas se leen de un vistazo
+  («Hoy · 09:15», «Ayer · 08:02») y usan la hora de **Lima**.
 - **Dock** a la izquierda para saltar a cada sección, actualizar y salir.
 
 ### Configurar el acceso
@@ -173,7 +176,7 @@ src/
   components/SlideCommit.tsx    control deslizante de confirmación (React Bits)
   components/Toast.tsx           notificaciones
   context/                       sesión de Supabase
-  lib/                           cliente Supabase, validacion y constantes
+  lib/                           cliente Supabase, validacion, constantes y fechas
   pages/Login.tsx                acceso con correo y contraseña
   pages/Registro.tsx             formulario de asistencia
   pages/Admin.tsx                panel de control

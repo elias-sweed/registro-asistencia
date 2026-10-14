@@ -14,7 +14,8 @@ import { GraficoBarras, GraficoColumnas, GraficoDona } from '../components/Grafi
 import type { Segmento } from '../components/Graficos'
 import { useAuth } from '../context/authContext'
 import { consultarPanel, esAdministrador } from '../lib/admin'
-import { formatearFecha, textoPrograma, textoTurno } from '../lib/constantes'
+import { textoPrograma, textoTurno } from '../lib/constantes'
+import { claveDia, diasDesde, fechaConDia, fechaCorta, hoyEnLima } from '../lib/fechas'
 import type { AdminDatos } from '../lib/types'
 import { AccesoAdmin } from './AccesoAdmin'
 
@@ -26,6 +27,16 @@ const COLORES: Record<string, string> = {
 }
 
 type Filtro = 'todos' | 'marcaron' | 'pendientes'
+
+type FiltroDia = 'todo' | 'hoy' | 'ayer' | 'anteayer' | 'semana'
+
+const OPCIONES_DIA: { valor: FiltroDia; texto: string }[] = [
+  { valor: 'hoy', texto: 'Hoy' },
+  { valor: 'ayer', texto: 'Ayer' },
+  { valor: 'anteayer', texto: 'Antes de ayer' },
+  { valor: 'semana', texto: 'Últimos 7 días' },
+  { valor: 'todo', texto: 'Todo' },
+]
 
 type Fila = {
   correo: string
@@ -45,6 +56,7 @@ export function Admin() {
   const [datos, setDatos] = useState<AdminDatos | null>(null)
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [dia, setDia] = useState<FiltroDia>('todo')
   const [busqueda, setBusqueda] = useState('')
   const [programaAbierto, setProgramaAbierto] = useState<string | null>(null)
 
@@ -104,6 +116,8 @@ export function Admin() {
       error={error}
       filtro={filtro}
       setFiltro={setFiltro}
+      dia={dia}
+      setDia={setDia}
       busqueda={busqueda}
       setBusqueda={setBusqueda}
       programaAbierto={programaAbierto}
@@ -120,6 +134,8 @@ function Panel({
   error,
   filtro,
   setFiltro,
+  dia,
+  setDia,
   busqueda,
   setBusqueda,
   programaAbierto,
@@ -132,6 +148,8 @@ function Panel({
   error: string
   filtro: Filtro
   setFiltro: (v: Filtro) => void
+  dia: FiltroDia
+  setDia: (v: FiltroDia) => void
   busqueda: string
   setBusqueda: (v: string) => void
   programaAbierto: string | null
@@ -141,7 +159,7 @@ function Panel({
 }) {
   const { resumen, por_programa, por_ciclo, por_dia, marcaron, pendientes } = datos
 
-  const filas = useMemo<Fila[]>(() => {
+  const filasBase = useMemo<Fila[]>(() => {
     const marcadas: Fila[] = marcaron.map((f) => ({
       correo: f.correo,
       nombres: f.nombres,
@@ -186,6 +204,33 @@ function Panel({
       })
       .sort((a, b) => orden[a.estado] - orden[b.estado] || a.nombres.localeCompare(b.nombres))
   }, [marcaron, pendientes, filtro, busqueda])
+
+  // El filtro de dia solo aplica a quienes SI marcaron: los que siguen
+  // pendientes todavia no tienen fecha de registro.
+  const filas = useMemo<Fila[]>(() => {
+    if (dia === 'todo') return filasBase
+
+    return filasBase
+      .filter((f) => {
+        if (!f.fecha) return false
+        const clave = claveDia(f.fecha)
+        if (dia === 'semana') return diasDesde(f.fecha) <= 6
+        return clave === dia
+      })
+      .sort((a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''))
+  }, [filasBase, dia])
+
+  const conteoDia = useMemo(() => {
+    const cuenta: Record<string, number> = { todo: filasBase.length }
+    const hoy = hoyEnLima()
+    for (const f of filasBase) {
+      if (!f.fecha) continue
+      const clave = claveDia(f.fecha, hoy)
+      if (clave) cuenta[clave] = (cuenta[clave] ?? 0) + 1
+      if (diasDesde(f.fecha, hoy) <= 6) cuenta.semana = (cuenta.semana ?? 0) + 1
+    }
+    return cuenta
+  }, [filasBase])
 
   const segmentosPrograma: Segmento[] = por_programa.map((f) => ({
     etiqueta: textoPrograma(f.programa as never),
@@ -431,7 +476,7 @@ function Panel({
                               }
                             >
                               {f.estado === 'marcaron'
-                                ? `Marcó · ${formatearFecha(f.fecha ?? '')}`
+                                ? `Marcó · ${fechaConDia(f.fecha)}`
                                 : 'Sin marcar'}
                             </span>
                           </li>
@@ -451,40 +496,76 @@ function Panel({
         <section id="practicantes" className="panel-vidrio mt-6 rounded-xl p-6 scroll-mt-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-perla-50">
-              Detalle de practicantes ({filas.length})
+              Detalle de practicantes · {filas.length}
             </h2>
             <input
               type="search"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por nombre o usuario…"
+              placeholder="Buscar por nombre o correo…"
               aria-label="Buscar practicante"
               className="campo w-full max-w-xs"
             />
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-3">
-            <div className="flex gap-1 rounded-lg border border-ink-600 p-1">
-              {(
-                [
-                  ['todos', `Todos (${marcaron.length + pendientes.length})`],
-                  ['marcaron', `Marcaron (${marcaron.length})`],
-                  ['pendientes', `Sin marcar (${pendientes.length})`],
-                ] as [Filtro, string][]
-              ).map(([valor, texto]) => (
-                <button
-                  key={valor}
-                  type="button"
-                  onClick={() => setFiltro(valor)}
-                  className={`rounded px-3 py-1.5 text-xs font-semibold transition ${
-                    filtro === valor ? 'bg-oro-500 text-ink-950' : 'text-perla-300 hover:text-perla-50'
-                  }`}
-                >
-                  {texto}
-                </button>
-              ))}
+          <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-3">
+            <div>
+              <p className="rotulo mb-1.5">Estado</p>
+              <div className="flex flex-wrap gap-1 rounded-lg border border-white/15 bg-white/5 p-1">
+                {(
+                  [
+                    ['todos', `Todos ${marcaron.length + pendientes.length}`],
+                    ['marcaron', `Marcaron ${marcaron.length}`],
+                    ['pendientes', `Sin marcar ${pendientes.length}`],
+                  ] as [Filtro, string][]
+                ).map(([valor, texto]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setFiltro(valor)}
+                    aria-pressed={filtro === valor}
+                    className={`rounded px-3 py-1.5 text-xs font-semibold transition ${
+                      filtro === valor
+                        ? 'bg-oro-500 text-ink-950'
+                        : 'text-perla-300 hover:text-perla-50'
+                    }`}
+                  >
+                    {texto}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="rotulo mb-1.5">Día de la asistencia</p>
+              <div className="flex flex-wrap gap-1 rounded-lg border border-white/15 bg-white/5 p-1">
+                {OPCIONES_DIA.map((opcion) => (
+                  <button
+                    key={opcion.valor}
+                    type="button"
+                    onClick={() => setDia(opcion.valor)}
+                    aria-pressed={dia === opcion.valor}
+                    className={`rounded px-3 py-1.5 text-xs font-semibold transition ${
+                      dia === opcion.valor
+                        ? 'bg-oro-500 text-ink-950'
+                        : 'text-perla-300 hover:text-perla-50'
+                    }`}
+                  >
+                    {opcion.texto}
+                    <span className="ml-1.5 opacity-70">{conteoDia[opcion.valor] ?? 0}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+
+          {dia !== 'todo' && (
+            <p className="mt-3 text-xs text-perla-400">
+              Mostrando solo quienes{' '}
+              <strong className="text-oro-400">marcaron asistencia</strong> ese día. Quienes
+              todavía no marcan no aparecen.
+            </p>
+          )}
 
           <div className="mt-4">
             <Ornamento />
@@ -493,21 +574,27 @@ function Panel({
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[820px] text-left text-sm">
               <thead>
-                <tr className="border-b border-ink-700 text-perla-400">
-                  <th className="rotulo px-2 py-2">Usuario</th>
-                  <th className="rotulo px-2 py-2">Practicante</th>
-                  <th className="rotulo px-2 py-2">Programa</th>
-                  <th className="rotulo px-2 py-2">Ciclo</th>
-                  <th className="rotulo px-2 py-2">Estado</th>
-                  <th className="rotulo px-2 py-2">Cuenta creada</th>
-                  <th className="rotulo px-2 py-2">Registro</th>
+                <tr className="border-b border-white/15">
+                  <th className="rotulo px-2 py-2.5">Practicante</th>
+                  <th className="rotulo px-2 py-2.5">Programa</th>
+                  <th className="rotulo px-2 py-2.5">Ciclo</th>
+                  <th className="rotulo px-2 py-2.5">Turno</th>
+                  <th className="rotulo px-2 py-2.5">Estado</th>
+                  <th className="rotulo px-2 py-2.5">
+                    <span title="Cuándo se creó la cuenta en la aplicación">Creó cuenta</span>
+                  </th>
+                  <th className="rotulo px-2 py-2.5">
+                    <span title="Cuándo registró su asistencia">Marcó asistencia</span>
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-800">
+              <tbody className="divide-y divide-white/10">
                 {filas.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-2 py-6 text-center text-perla-400">
-                      No hay practicantes en esta vista.
+                    <td colSpan={7} className="px-2 py-8 text-center text-perla-400">
+                      {dia === 'todo'
+                        ? 'No hay practicantes que cumplan este filtro.'
+                        : 'Nadie registró asistencia ese día.'}
                     </td>
                   </tr>
                 )}
@@ -515,35 +602,44 @@ function Panel({
                   const completo = Boolean(f.nombres || f.apellidos)
                   const esMarcado = f.estado === 'marcaron'
                   return (
-                    <tr key={f.correo} className="hover:bg-ink-850/40">
-                      <td className="px-2 py-2.5 font-mono text-xs text-perla-200">{f.correo}</td>
-                      <td className="px-2 py-2.5 text-perla-50">
-                        {completo ? (
-                          `${f.nombres} ${f.apellidos}`
-                        ) : (
-                          <span className="text-perla-400">Sin datos</span>
-                        )}
+                    <tr key={f.correo} className="hover:bg-white/5">
+                      <td className="px-2 py-3">
+                        <span className="block font-medium text-perla-50">
+                          {completo ? `${f.nombres} ${f.apellidos}` : 'Sin datos'}
+                        </span>
+                        <span className="block font-mono text-[11px] text-perla-400">
+                          {f.correo}
+                        </span>
                       </td>
-                      <td className="px-2 py-2.5 text-perla-100">
+                      <td className="px-2 py-3 text-perla-100">
                         {textoPrograma(f.programa as never)}
                       </td>
-                      <td className="px-2 py-2.5 text-perla-100">{f.ciclo ?? '—'}</td>
-                      <td className="px-2 py-2.5">
+                      <td className="px-2 py-3 text-perla-100">
+                        {f.ciclo === null || f.ciclo === 0 ? '—' : f.ciclo}
+                      </td>
+                      <td className="px-2 py-3 text-perla-100">
+                        {esMarcado ? textoTurno(f.turno) : '—'}
+                      </td>
+                      <td className="px-2 py-3">
                         <span
-                          className={`rounded px-2 py-1 text-xs font-semibold ${
+                          className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
                             esMarcado
                               ? 'bg-oro-500/15 text-oro-400'
                               : 'bg-carmesi-500/15 text-carmesi-400'
                           }`}
                         >
-                          {esMarcado ? `Marcó · ${textoTurno(f.turno)}` : 'Sin marcar'}
+                          {esMarcado ? 'Marcó' : 'Sin marcar'}
                         </span>
                       </td>
-                      <td className="px-2 py-2.5 text-xs text-perla-300">
-                        {f.creado_en ? formatearFecha(f.creado_en) : '—'}
+                      <td className="px-2 py-3 text-xs whitespace-nowrap text-perla-300">
+                        {fechaCorta(f.creado_en)}
                       </td>
-                      <td className="px-2 py-2.5 text-xs text-perla-300">
-                        {esMarcado && f.fecha ? formatearFecha(f.fecha) : '—'}
+                      <td
+                        className={`px-2 py-3 text-xs whitespace-nowrap ${
+                          esMarcado ? 'font-semibold text-oro-400' : 'text-perla-400'
+                        }`}
+                      >
+                        {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'}
                       </td>
                     </tr>
                   )
@@ -553,9 +649,9 @@ function Panel({
           </div>
         </section>
 
-        <p className="mt-6 text-center text-xs text-perla-400">
-          El registro es una sola vez por practicante y por navegador.
-        </p>
+<p className="mt-6 text-center text-xs text-perla-400">
+            Cada practicante registra su asistencia una sola vez. Las horas corresponden a Lima.
+          </p>
       </div>
     </div>
   )
