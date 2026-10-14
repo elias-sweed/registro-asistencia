@@ -316,6 +316,9 @@ function Panel({
       ? 'No hay practicantes que cumplan este filtro.'
       : 'Nadie registró asistencia ese día.'
 
+  const marcadosVisibles = filas.filter((f) => f.estado === 'marcaron').length
+  const pendientesVisibles = filas.length - marcadosVisibles
+
   // El PDF imprime exactamente lo que se está viendo en pantalla.
   const tituloFiltro = [
     OPCIONES_DIA.find((o) => o.valor === dia)?.texto,
@@ -594,37 +597,49 @@ function Panel({
 
         {/* Lista de practicantes */}
         <section id="practicantes" className="panel-admin mt-6 rounded-xl p-5 p-6 scroll-mt-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="search"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por nombre o correo…"
-              aria-label="Buscar practicante"
-              className="campo w-full flex-1 sm:max-w-xs"
-            />
-            <button
-              type="button"
-              onClick={() => window.print()}
-              disabled={filas.length === 0}
-              title="Guarda este listado como PDF"
-              className="boton-oro inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm disabled:opacity-50"
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                aria-hidden="true"
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
+                ¿Quién registró su asistencia y quién todavía no?
+              </h2>
+              <p className="mt-1 text-xs text-perla-400">
+                {filas.length === 0
+                  ? 'No hay nadie en esta vista.'
+                  : `${filas.length} persona${filas.length === 1 ? '' : 's'} · ${marcadosVisibles} marcaron y ${pendientesVisibles} sin marcar`}
+              </p>
+            </div>
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              <input
+                type="search"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar por nombre o correo…"
+                aria-label="Buscar practicante"
+                className="campo w-full flex-1 sm:w-56 sm:flex-none"
+              />
+              <button
+                type="button"
+                onClick={() => window.print()}
+                disabled={filas.length === 0}
+                title="Guarda este listado como PDF"
+                className="boton-oro inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm disabled:opacity-50"
               >
-                <path d="M12 3v12M8 11l4 4 4-4" />
-                <path d="M5 17v3h14v-3" />
-              </svg>
-              <span className="hidden sm:inline">Guardar como PDF</span>
-              <span className="sm:hidden">PDF</span>
-            </button>
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 3v12M8 11l4 4 4-4" />
+                  <path d="M5 17v3h14v-3" />
+                </svg>
+                <span className="hidden sm:inline">Guardar como PDF</span>
+                <span className="sm:hidden">PDF</span>
+              </button>
+            </div>
           </div>
 
           <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-3">
@@ -870,10 +885,6 @@ function Panel({
             </table>
           </div>
         </section>
-
-        <p className="mt-6 mb-2 text-center text-xs text-perla-400">
-          Cada practicante registra su asistencia una sola vez. Las horas corresponden a Lima.
-        </p>
 
         <ReporteImpresion filas={filas} tituloFiltro={tituloFiltro} />
 

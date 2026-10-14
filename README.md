@@ -72,10 +72,15 @@ pide el correo y la contraseña del administrador.
   - *¿Cuántos han asistido en cada turno?* (barras, una por turno).
 - *¿Quién falta por marcar en cada programa?*: una barra por programa con cuántos marcaron
   de cuántos son.
-- **Lista de practicantes.** En computadora es una tabla y en celular una tarjeta por
-  persona, para no obligar a deslizar la pantalla de lado a lado. Cada fila trae un botón
-  para **eliminar la cuenta**: pide confirmación y borra también el registro de asistencia.
+- **¿Quién registró su asistencia y quién todavía no?**: el listado completo. Abajo del
+  título se lee cuántas personas hay en la vista, cuántas marcaron y cuántas no. En
+  computadora es una tabla y en celular una tarjeta por persona, para no obligar a deslizar
+  la pantalla de lado a lado. Cada fila trae un botón para **eliminar la cuenta**: pide
+  confirmación y borra también el registro de asistencia.
   Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez para que ese botón funcione.
+- **Filtros del listado:** *Estado* (Todos / Marcaron / Sin marcar) y *Día de la asistencia*
+  (Hoy / Ayer / Antes de ayer / Últimos 7 días / Todo), cada opción con su contador. Las
+  fechas se leen de un vistazo («Hoy · 09:15», «Ayer · 08:02») y usan la hora de **Lima**.
 - **Guardar como PDF.** El botón imprime el listado que estás viendo (respeta el día, el
   estado y la búsqueda que tengas aplicados). El documento sale con dos tablas:
   **«Sí registraron su asistencia»** y **«Todavía NO han registrado su asistencia»**, cada
