@@ -257,3 +257,15 @@ En **Supabase → SQL Editor**, ejecuta en este orden:
 5. `supabase/admin.sql`
 6. **`supabase/admin-arreglo.sql`** ← revisa que tu correo aparezca en la lista del final
 7. `supabase/eliminar-cuenta.sql` ← habilita el botón de eliminar cuenta del panel
+8. **`supabase/limpiar-admin.sql`** ← saca la cuenta del administrador de `practicantes`
+
+### Por qué el administrador salía en `practicantes`
+
+La función `handle_new_user()` inserta una fila en `public.practicantes` por cada cuenta
+que se crea en **Supabase → Authentication**, sin mirar si esa cuenta administra el panel.
+Por eso la cuenta del coordinador aparecía listada como practicante, con `programa = SENATI`
+por defecto y sin nombre. `supabase/limpiar-admin.sql` cambia el trigger para que se salte
+a los administradores y borra la fila que ya había quedado mal.
+
+El panel además los oculta en pantalla, aunque el arreglo de la base es el importante: las
+tarjetas, los gráficos y los filtros ya no cuentan con el administrador.
