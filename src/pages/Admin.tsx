@@ -35,12 +35,21 @@ type Filtro = 'todos' | 'marcaron' | 'pendientes'
 
 type FiltroDia = 'todo' | 'hoy' | 'ayer' | 'anteayer' | 'semana'
 
+type FiltroPrograma = 'TODOS' | 'SENATI' | 'UCV' | 'DOCENTE_API'
+
 const OPCIONES_DIA: { valor: FiltroDia; texto: string }[] = [
   { valor: 'hoy', texto: 'Hoy' },
   { valor: 'ayer', texto: 'Ayer' },
   { valor: 'anteayer', texto: 'Antes de ayer' },
   { valor: 'semana', texto: 'Últimos 7 días' },
   { valor: 'todo', texto: 'Todo' },
+]
+
+const OPCIONES_PROGRAMA_FILTRO: { valor: FiltroPrograma; texto: string }[] = [
+  { valor: 'TODOS', texto: 'Todos' },
+  { valor: 'SENATI', texto: 'SENATI' },
+  { valor: 'UCV', texto: 'UCV' },
+  { valor: 'DOCENTE_API', texto: 'Docentes' },
 ]
 
 type Fila = {
@@ -62,6 +71,7 @@ export function Admin() {
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [dia, setDia] = useState<FiltroDia>('todo')
+  const [programaCiclo, setProgramaCiclo] = useState<FiltroPrograma>('TODOS')
   const [busqueda, setBusqueda] = useState('')
 
   const cargar = useCallback(async () => {
@@ -122,6 +132,8 @@ export function Admin() {
       setFiltro={setFiltro}
       dia={dia}
       setDia={setDia}
+      programaCiclo={programaCiclo}
+      setProgramaCiclo={setProgramaCiclo}
       busqueda={busqueda}
       setBusqueda={setBusqueda}
       salir={salir}
@@ -138,6 +150,8 @@ function Panel({
   setFiltro,
   dia,
   setDia,
+  programaCiclo,
+  setProgramaCiclo,
   busqueda,
   setBusqueda,
   salir,
@@ -150,12 +164,14 @@ function Panel({
   setFiltro: (v: Filtro) => void
   dia: FiltroDia
   setDia: (v: FiltroDia) => void
+  programaCiclo: FiltroPrograma
+  setProgramaCiclo: (v: FiltroPrograma) => void
   busqueda: string
   setBusqueda: (v: string) => void
   salir: () => Promise<void>
   recargar: () => void
 }) {
-  const { resumen, por_programa, por_ciclo, por_dia, marcaron, pendientes } = datos
+  const { resumen, por_programa, por_dia, marcaron, pendientes } = datos
 
   const filasBase = useMemo<Fila[]>(() => {
     const marcadas: Fila[] = marcaron.map((f) => ({
@@ -241,15 +257,30 @@ function Panel({
     { etiqueta: 'Sin marcar', valor: resumen.pendientes, color: '#b32026' },
   ]
 
-  const ciclos = por_ciclo
-    .filter((f) => f.ciclo > 0)
-    .sort((a, b) => a.ciclo - b.ciclo)
-    .map((f) => ({
-      etiqueta: `Ciclo ${f.ciclo}`,
-      valor: f.total,
-      detalle: `${f.marcaron} de ${f.total} marcaron`,
-      color: f.ciclo <= 6 ? '#c9a227' : '#4a7fb5',
-    }))
+// Las cuentas por ciclo se cuentan aqui para poder separar por programa:
+  // la base de datos agrupa por ciclo, no por ciclo y programa a la vez.
+  const ciclos = useMemo(() => {
+    const cuentas = new Map<number, { total: number; marcaron: number }>()
+
+    for (const fila of [...marcaron, ...pendientes]) {
+      if (programaCiclo !== 'TODOS' && fila.programa !== programaCiclo) continue
+      const numero = fila.ciclo
+      if (!numero || numero < 1) continue
+      const actual = cuentas.get(numero) ?? { total: 0, marcaron: 0 }
+      actual.total += 1
+      if ('fecha' in fila && fila.fecha) actual.marcaron += 1
+      cuentas.set(numero, actual)
+    }
+
+    return [...cuentas.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([ciclo, dato]) => ({
+        etiqueta: `Ciclo ${ciclo}`,
+        valor: dato.total,
+        detalle: `${dato.marcaron} de ${dato.total} marcaron`,
+        color: ciclo <= 6 ? '#c9a227' : '#4a7fb5',
+      }))
+  }, [marcaron, pendientes, programaCiclo])
 
   const dias = por_dia.map((f) => ({
     etiqueta: f.dia.slice(5).split('-').reverse().join('/'),
@@ -317,6 +348,7 @@ function Panel({
         items={itemsDock}
         position="bottom"
         theme="dark"
+        style={{ position: 'fixed' }}
         baseItemSize={50}
         magnification={70}
         panelHeight={68}
@@ -370,8 +402,8 @@ function Panel({
         {/* Gráficos */}
         <section id="graficos" className="mt-6 grid scroll-mt-8 gap-6 lg:grid-cols-2">
           <article className="panel-admin rounded-xl p-6">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Marcaron vs. sin marcar
+            <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
+              ¿Cuántas personas registraron su asistencia y cuántas no?
             </h2>
             <div className="mt-3">
               <Ornamento />
@@ -386,8 +418,8 @@ function Panel({
           </article>
 
           <article className="panel-admin rounded-xl p-6">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Cuentas por programa
+            <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
+              ¿Cuántas cuentas hay por programa?
             </h2>
             <div className="mt-3">
               <Ornamento />
@@ -402,20 +434,48 @@ function Panel({
           </article>
 
           <article className="panel-admin rounded-xl p-6">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Cuentas por ciclo
-            </h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
+                ¿Cuántas cuentas hay en cada ciclo?
+              </h2>
+              <div className="flex shrink-0 flex-wrap gap-1 rounded-lg border border-white/15 bg-white/5 p-1">
+                {OPCIONES_PROGRAMA_FILTRO.map((opcion) => (
+                  <button
+                    key={opcion.valor}
+                    type="button"
+                    onClick={() => setProgramaCiclo(opcion.valor)}
+                    aria-pressed={programaCiclo === opcion.valor}
+                    className={`cursor-pointer rounded px-2.5 py-1 text-xs font-semibold transition ${
+                      programaCiclo === opcion.valor
+                        ? 'bg-oro-500 text-ink-950'
+                        : 'text-perla-300 hover:text-perla-50'
+                    }`}
+                  >
+                    {opcion.texto}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="mt-3">
               <Ornamento />
             </div>
+            {programaCiclo !== 'TODOS' && (
+              <p className="mt-2 text-xs text-perla-400">
+                Mostrando solo{' '}
+                <strong className="text-oro-400">
+                  {textoPrograma(programaCiclo as never)}
+                </strong>{' '}
+                · {ciclos.reduce((suma, c) => suma + c.valor, 0)} en total
+              </p>
+            )}
             <div className="mt-5">
               <GraficoBarras datos={ciclos} />
             </div>
           </article>
 
           <article className="panel-admin rounded-xl p-6">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Asistencia por turno
+            <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
+              ¿Cuántos han asistido en cada turno?
             </h2>
             <div className="mt-3">
               <Ornamento />
@@ -432,8 +492,8 @@ function Panel({
           </article>
 
           <article className="panel-admin rounded-xl p-6 lg:col-span-2">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Registros por día
+            <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
+              ¿Cuántas personas registraron su asistencia cada día?
             </h2>
             <div className="mt-3">
               <Ornamento />

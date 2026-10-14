@@ -124,15 +124,15 @@ const MARGIN = 8
 const POP = 'cubic-bezier(0.2, 1.25, 0.4, 1)'
 
 const ROOT =
-  'absolute z-10 flex box-border gap-[var(--dock-gap)] p-[var(--dock-pad)] rounded-[calc(var(--dock-base)*var(--dock-round)*0.5_+_var(--dock-pad))] [background:var(--dock-panel)] [box-shadow:inset_0_0_0_1px_var(--dock-panel-edge),inset_0_1px_0_var(--dock-panel-highlight),var(--dock-panel-shadow)] backdrop-blur-[20px] backdrop-saturate-[1.6] touch-none [transition:translate_0.5s_cubic-bezier(0.22,1,0.36,1),opacity_0.2s_ease] data-[hidden]:pointer-events-none data-[hidden]:opacity-0 data-[hidden]:[transition:translate_0.36s_cubic-bezier(0.55,0,0.75,0.15),opacity_0.24s_ease_0.1s] motion-reduce:!transition-none before:absolute before:-z-10 before:hidden before:content-[""] hover:before:block'
+  'z-10 flex box-border gap-[var(--dock-gap)] p-[var(--dock-pad)] rounded-[calc(var(--dock-base)*var(--dock-round)*0.5_+_var(--dock-pad))] [background:var(--dock-panel)] [box-shadow:inset_0_0_0_1px_var(--dock-panel-edge),inset_0_1px_0_var(--dock-panel-highlight),var(--dock-panel-shadow)] backdrop-blur-[20px] backdrop-saturate-[1.6] touch-none [transition:translate_0.5s_cubic-bezier(0.22,1,0.36,1),opacity_0.2s_ease] data-[hidden]:pointer-events-none data-[hidden]:opacity-0 data-[hidden]:[transition:translate_0.36s_cubic-bezier(0.55,0,0.75,0.15),opacity_0.24s_ease_0.1s] motion-reduce:!transition-none before:absolute before:-z-10 before:hidden before:content-[""] hover:before:block'
 
 const ROOT_SIDES: Record<DockSide, string> = {
   bottom:
-    'bottom-[12px] left-1/2 h-[var(--dock-thickness)] items-end [transform:translateX(-50%)] data-[hidden]:[translate:0_calc(100%_+_12px)] before:inset-x-0 before:bottom-full before:h-[calc(var(--dock-reach)_+_8px)]',
-  top: 'top-[12px] left-1/2 h-[var(--dock-thickness)] items-start [transform:translateX(-50%)] data-[hidden]:[translate:0_calc(-100%_-_12px)] before:inset-x-0 before:top-full before:h-[calc(var(--dock-reach)_+_8px)]',
-  left: 'left-[12px] top-1/2 w-[var(--dock-thickness)] flex-col items-start [transform:translateY(-50%)] data-[hidden]:[translate:calc(-100%_-_12px)_0] before:inset-y-0 before:left-full before:w-[calc(var(--dock-reach)_+_8px)]',
+    'absolute bottom-[12px] left-1/2 h-[var(--dock-thickness)] items-end [transform:translateX(-50%)] data-[hidden]:[translate:0_calc(100%_+_12px)] before:inset-x-0 before:bottom-full before:h-[calc(var(--dock-reach)_+_8px)]',
+  top: 'absolute top-[12px] left-1/2 h-[var(--dock-thickness)] items-start [transform:translateX(-50%)] data-[hidden]:[translate:0_calc(-100%_-_12px)] before:inset-x-0 before:top-full before:h-[calc(var(--dock-reach)_+_8px)]',
+  left: 'absolute left-[12px] top-1/2 w-[var(--dock-thickness)] flex-col items-start [transform:translateY(-50%)] data-[hidden]:[translate:calc(-100%_-_12px)_0] before:inset-y-0 before:left-full before:w-[calc(var(--dock-reach)_+_8px)]',
   right:
-    'right-[12px] top-1/2 w-[var(--dock-thickness)] flex-col items-end [transform:translateY(-50%)] data-[hidden]:[translate:calc(100%_+_12px)_0] before:inset-y-0 before:right-full before:w-[calc(var(--dock-reach)_+_8px)]'
+    'absolute right-[12px] top-1/2 w-[var(--dock-thickness)] flex-col items-end [transform:translateY(-50%)] data-[hidden]:[translate:calc(100%_+_12px)_0] before:inset-y-0 before:right-full before:w-[calc(var(--dock-reach)_+_8px)]'
 }
 
 const ITEM =
