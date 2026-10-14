@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { BienvenidaModal } from '../components/BienvenidaModal'
@@ -17,7 +17,6 @@ import {
   TURNOS,
   aplicaCiclo,
   ciclosDe,
-  formatearFecha,
   textoPrograma,
 } from '../lib/constantes'
 import { limpiarNombre, validarNombre } from '../lib/validacion'
@@ -76,7 +75,6 @@ function Formulario({ uid }: { uid: string }) {
   const [turno, setTurno] = useState<Turno | ''>('')
   const [errores, setErrores] = useState<Errores>({})
   const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(null)
-  const [ahora, setAhora] = useState(() => new Date())
   const [yaRegistro, setYaRegistro] = useState(() => navegadorRegistrado(correo) !== null)
   const [celebracion, setCelebracion] = useState<{ nombre: string; programa: string } | null>(null)
   const [bloqueo, setBloqueo] = useState<Bloqueo | null>(null)
@@ -103,11 +101,6 @@ function Formulario({ uid }: { uid: string }) {
     const observador = new ResizeObserver(medir)
     observador.observe(caja)
     return () => observador.disconnect()
-  }, [])
-
-  useEffect(() => {
-    const id = window.setInterval(() => setAhora(new Date()), 1000)
-    return () => window.clearInterval(id)
   }, [])
 
   const cerrarBienvenida = useCallback(() => {
@@ -241,12 +234,21 @@ function Formulario({ uid }: { uid: string }) {
     })
 
     if (error) {
-      if (/YA_REGISTRADO/.test(error.message)) {
+      // La funcion lanza YA_REGISTRADO, pero si una version anterior de la
+      // base dejo pasar el choque de clave unica, PostgREST responde 409.
+      // Las dos cosas significan lo mismo: esta cuenta ya marked.
+      const mensaje = error.message ?? ''
+      const yaMarco =
+        /YA_REGISTRADO/.test(mensaje) ||
+        error.code === '23505' ||
+        /duplicate key|violates unique constraint|unique_violation/i.test(mensaje)
+
+      if (yaMarco) {
         marcarRegistroHecho(correo)
         setYaRegistro(true)
         throw new Error('YA_REGISTRADO')
       }
-      if (/NO_AUTENTICADO/.test(error.message)) {
+      if (/NO_AUTENTICADO/.test(mensaje)) {
         throw new Error('NO_AUTENTICADO')
       }
       throw error
@@ -443,33 +445,10 @@ function Formulario({ uid }: { uid: string }) {
               </select>
             </Campo>
 
-            <Campo id="fecha" etiqueta="Fecha y hora del registro">
-              <div className="relative">
-                <input
-                  id="fecha"
-                  name="fecha"
-                  type="text"
-                  readOnly
-                  disabled
-                  value={formatearFecha(ahora)}
-                  className="campo pr-11"
-                />
-                <svg
-                  className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-oro-500/70"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 7.5V12l3 1.8" strokeLinecap="round" />
-                </svg>
-              </div>
-              <p className="mt-1.5 text-xs text-perla-400">
-                Se toma automáticamente al momento de registrar.
-              </p>
-            </Campo>
+            <p className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-xs leading-relaxed text-perla-400">
+              La fecha y hora se guardan solas al registrar. Si se te olvidó marcar,
+              comunícate con el coordinador para que lo corrija.
+            </p>
 
             <div ref={cajaSlider} className="flex justify-center pt-1">
               <SlideCommit

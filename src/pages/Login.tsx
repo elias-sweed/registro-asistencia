@@ -102,23 +102,37 @@ export function Login() {
           email: correoLimpio,
           password: clave,
         })
-        if (
-          errorRegistro &&
-          !/already been registered|already registered/i.test(errorRegistro.message)
-        )
-          throw errorRegistro
+
+        const yaExistia =
+          Boolean(errorRegistro) &&
+          /already been registered|already registered|User already registered/i.test(
+            errorRegistro?.message ?? '',
+          )
+
+        if (errorRegistro && !yaExistia) throw errorRegistro
 
         if (data?.session) return
 
+        // El correo ya estaba dado de alta. Antes se entraba en silencio a esa
+        // cuenta y el practicante creia que acababa de crear una nueva, para
+        // encontrarse luego con un error al marcar. Ahora se avisa.
         const { error: errorIngreso } = await supabase.auth.signInWithPassword({
           email: correoLimpio,
           password: clave,
         })
 
+        if (yaExistia && !errorIngreso) {
+          setError(
+            `Ese correo ya tenía una cuenta, así que entraste a esa (no se creó una nueva) y si ya habías marcado antes no podrás volver a marcar. Si necesitas una cuenta nueva, usa otro correo o avisa al coordinador.`,
+          )
+          setEnviando(false)
+          return
+        }
+
         if (errorIngreso) {
           if (/Invalid login credentials/i.test(errorIngreso.message)) {
             setError(
-              'Ya existe una cuenta con ese correo. Si eres tú, ingresa con tu contraseña.',
+              'Ese correo ya tiene una cuenta con otra contraseña. Ingresa con tu contraseña, o avisa al coordinador si la olvidaste.',
             )
             return
           }
