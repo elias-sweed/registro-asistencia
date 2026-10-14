@@ -8,6 +8,7 @@ export function ModalConfirmar({
   detalle,
   textoConfirmar = 'Sí, eliminar',
   textoCancelar = 'Cancelar',
+  iconoPeligro = false,
   confirmando = false,
   onConfirmar,
   onCancelar,
@@ -18,6 +19,7 @@ export function ModalConfirmar({
   detalle?: ReactNode
   textoConfirmar?: string
   textoCancelar?: string
+  iconoPeligro?: boolean
   confirmando?: boolean
   onConfirmar: () => void
   onCancelar: () => void
@@ -31,9 +33,17 @@ export function ModalConfirmar({
       aria-label={titulo}
       className="fixed inset-0 z-[80] flex items-center justify-center bg-ink-950/95 px-4 backdrop-blur-sm"
     >
-      <div className="animate-[surgir_0.3s_ease-out] panel-admin w-full max-w-md rounded-2xl p-7 text-center">
+      <div
+        className={`animate-[surgir_0.3s_ease-out] panel-admin w-full max-w-md rounded-2xl p-7 text-center ${
+          iconoPeligro ? 'border-carmesi-400/50' : ''
+        }`}
+      >
         <span
-          className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-carmesi-400/50 bg-carmesi-500/15"
+          className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full border ${
+            iconoPeligro
+              ? 'border-carmesi-400 bg-carmesi-500/25'
+              : 'border-carmesi-400/50 bg-carmesi-500/15'
+          }`}
           aria-hidden="true"
         >
           <svg

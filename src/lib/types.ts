@@ -94,10 +94,6 @@ export type Database = {
         Args: { p_correo: string }
         Returns: boolean
       }
-      corregir_fecha_registro: {
-        Args: { p_correo: string; p_fecha: string }
-        Returns: boolean
-      }
       registrar_asistencia: {
         Args: {
           p_nombres: string

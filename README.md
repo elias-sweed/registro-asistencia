@@ -1,4 +1,4 @@
-# Registro de Asistencia · Practicantes
+﻿# Registro de Asistencia · Practicantes
 
 Aplicación web (React + TypeScript + Vite + Tailwind + Supabase) para registrar la
 asistencia de los practicantes de una Institución Educativa.
@@ -11,8 +11,8 @@ asistencia de los practicantes de una Institución Educativa.
    confirmación por correo: al crear la cuenta ya entra al sistema.
 3. **Modal de bienvenida** — al entrar se muestra un modal de carga con un tablero de letras
    por ~2.6 s.
-4. **Formulario** — nombres, apellidos, programa/rol, ciclo y turno (Mañana o Tarde).
-   La fecha y hora se guardan solas al marcar; el practicante no las escribe.
+4. **Formulario** — nombres, apellidos, programa/rol, ciclo, turno (Mañana o Tarde) y fecha y
+   hora automáticas.
 
 | Programa / Rol | Ciclos           |
 | -------------- | ---------------- |
@@ -81,19 +81,20 @@ pide el correo y la contraseña del administrador.
   asistencia y 3 todavía no la registran». En computadora es una tabla y en celular son filas
   compactas. Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez para poder borrar.
 - **Eliminar una cuenta.** En celular se desliza la fila a la izquierda y aparece una sola
-  acción roja, **Eliminar**: si deslizas hasta el final la fila se borra sola, y si solo la
-  abres un poco vuelve a su sitio. En la primera visita una animación sobre la primera fila
+  acción roja, **Eliminar**. En la **tabla de escritorio** hay un ícono de papelera en cada
+  fila. En ambos casos el borrado pide **dos confirmaciones**: la primera pregunta si de
+  verdad se quiere eliminar, y la segunda avisa que **no se puede deshacer** y que se borra
+  la cuenta, su ficha de practicante y su asistencia. Solo tras esa segunda pulsación se
+  borra de verdad. En la primera visita, en celular, una animación sobre la primera fila
   muestra una flecha que se desliza y el texto «Desliza a la izquierda»; se apaga para
-  siempre en cuanto intentas el gesto una vez. En la **tabla de escritorio** hay un ícono
-  de papelera en cada fila. En ambos casos aparece la confirmación con el nombre y el
-  correo, y solo entonces se borra la cuenta y su registro de asistencia.
-  Desde el teclado también funciona: `Tab` hasta la fila, `←` para abrir y `Supr` para
-  eliminar. Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez.
-- **Corregir la fecha de una asistencia.** Junto a la hora de cada persona que marcó
-  aparece un lápiz para corregirla a mano, por si alguien se olvidó de marcar. La hora que
-  escribes es la de Tarapoto (Lima), no la de tu computadora. Usa la función
-  `corregir_fecha_registro` del mismo `supabase/eliminar-cuenta.sql`.
+  siempre en cuanto se intenta el gesto una vez. Desde el teclado también funciona: `Tab`
+  hasta la fila, `←` para abrir y `Supr` para eliminar. Necesitas ejecutar
+  `supabase/eliminar-cuenta.sql` una vez.
+- **La fecha y hora no se editan.** Cuando alguien registra su asistencia queda con la hora
+  real del momento, y desde el panel no se puede modificar. Si hubo un error, la salida es
+  eliminar la cuenta para que la persona vuelva a marcar.
 - **El estado «Asistió» sale en verde** (salvia, del mismo tono que la paleta del colegio)
+  y «Sin marcar» en rojo.
   y «Sin marcar» en rojo.
 - **Botón Actualizar:** sube al principio de la página y muestra el panel cargando con
   marcos grises (*skeletons*), con un «Actualizando…» junto al título y el ícono girando.
@@ -225,8 +226,7 @@ src/
   components/Graficos.tsx      donas, barras y sus modos de interacción
   components/Esqueletos.tsx     marcos de carga del panel
   components/SwipeRow.tsx        fila que se desliza para eliminar
-  components/ModalEditarFecha.tsx  corregir a mano la fecha de una asistencia
-  components/ModalConfirmar.tsx  confirmación antes de eliminar
+    components/ModalConfirmar.tsx  confirmación antes de eliminar
   components/ReporteImpresion.tsx documento que se guarda como PDF
   components/SlideCommit.tsx    control deslizante de confirmación (React Bits)
   components/Toast.tsx           notificaciones
@@ -243,7 +243,7 @@ supabase/por-cuenta.sql            un solo registro por cuenta (sin bloqueo por 
 supabase/turnos.sql                agrega el turno MANANA y el parámetro p_turno al RPC
 supabase/admin.sql                 panel de administrador
 supabase/admin-arreglo.sql         acceso al panel sin distinguir mayúsculas + comprobación
-supabase/eliminar-cuenta.sql       borrar una cuenta y corregir la fecha, solo admin
+supabase/eliminar-cuenta.sql       borrar una cuenta desde el panel, solo admin
 ```
 
 ## Instalar los scripts de la base de datos

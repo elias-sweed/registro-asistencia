@@ -4,7 +4,6 @@ import {
   ArrowLeft01Icon,
   Chart01Icon,
   Delete02Icon,
-  Edit02Icon,
   Home01Icon,
   Logout01Icon,
   Refresh01Icon,
@@ -13,7 +12,6 @@ import {
 import Dock from '../components/Dock'
 import type { DockItemData } from '../components/Dock'
 import { Esqueletos } from '../components/Esqueletos'
-import { ModalEditarFecha } from '../components/ModalEditarFecha'
 import SwipeRow from '../components/SwipeRow'
 import { Escudo, Ornamento } from '../components/Escudo'
 import { GraficoBarras, GraficoDona } from '../components/Graficos'
@@ -21,7 +19,7 @@ import type { Segmento } from '../components/Graficos'
 import { ModalConfirmar } from '../components/ModalConfirmar'
 import { ReporteImpresion } from '../components/ReporteImpresion'
 import { useAuth } from '../context/authContext'
-import { consultarPanel, corregirFecha, eliminarCuenta, esAdministrador } from '../lib/admin'
+import { consultarPanel, eliminarCuenta, esAdministrador } from '../lib/admin'
 import { textoPrograma, textoTurno } from '../lib/constantes'
 import { claveDia, diasDesde, fechaConDia, fechaDetallada, hoyEnLima } from '../lib/fechas'
 import { supabase } from '../lib/supabase'
@@ -227,8 +225,7 @@ function Panel({
   const [borrando, setBorrando] = useState<string | null>(null)
   const [borrandoNombre, setBorrandoNombre] = useState('')
   const [eliminando, setEliminando] = useState(false)
-  const [editando, setEditando] = useState<Fila | null>(null)
-  const [guardandoFecha, setGuardandoFecha] = useState(false)
+  const [pasoBorrado, setPasoBorrado] = useState<1 | 2>(1)
   const [seccion, setSeccion] = useState('resumen')
 
   /* La pista de "desliza para eliminar" solo sale la primera vez: cuando ya
@@ -481,23 +478,18 @@ function Panel({
   function pedirBorrado(correo: string, nombre: string) {
     setBorrando(correo)
     setBorrandoNombre(nombre)
+    setPasoBorrado(1)
   }
 
-  async function guardarFecha(iso: string) {
-    if (!editando) return
-    setGuardandoFecha(true)
-    try {
-      await corregirFecha(editando.correo, iso)
-      setEditando(null)
-      recargar()
-    } catch (fallo) {
-      setError(
-        fallo instanceof Error ? fallo.message : 'No se pudo guardar la fecha. Inténtalo otra vez.',
-      )
-      setEditando(null)
-    } finally {
-      setGuardandoFecha(false)
-    }
+  /** Primera confirmación: solo avanza al aviso final. */
+  function confirmarPasoUno() {
+    setPasoBorrado(2)
+  }
+
+  function cancelarBorrado() {
+    setBorrando(null)
+    setBorrandoNombre('')
+    setPasoBorrado(1)
   }
 
   async function confirmarBorrado() {
@@ -505,8 +497,7 @@ function Panel({
     setEliminando(true)
     try {
       await eliminarCuenta(borrando)
-      setBorrando(null)
-      setBorrandoNombre('')
+      cancelarBorrado()
       recargar()
     } catch (fallo) {
       setError(
@@ -514,7 +505,7 @@ function Panel({
           ? fallo.message
           : 'No se pudo eliminar la cuenta. Inténtalo otra vez.',
       )
-      setBorrando(null)
+      cancelarBorrado()
     } finally {
       setEliminando(false)
     }
@@ -951,16 +942,6 @@ function Panel({
                         · Creó {fechaDetallada(f.creado_en).dia}{' '}
                         {fechaDetallada(f.creado_en).hora}
                       </p>
-                      {esMarcado && f.fecha && (
-                        <button
-                          type="button"
-                          onClick={() => setEditando(f)}
-                          className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-perla-400 transition hover:border-oro-500/60 hover:text-oro-400"
-                        >
-                          <HugeiconsIcon icon={Edit02Icon} size={13} strokeWidth={2} />
-                          Corregir la fecha
-                        </button>
-                      )}
                     </div>
                   </SwipeRow>
 
@@ -1055,20 +1036,7 @@ function Panel({
                           esMarcado ? 'font-semibold text-asistio-300' : 'text-perla-400'
                         }`}
                       >
-                        <span className="flex items-center gap-1.5">
-                          {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'}
-                          {esMarcado && f.fecha && (
-                            <button
-                              type="button"
-                              onClick={() => setEditando(f)}
-                              title={`Corregir la fecha de ${completo ? `${f.nombres} ${f.apellidos}` : f.correo}`}
-                              aria-label={`Corregir la fecha de ${completo ? `${f.nombres} ${f.apellidos}` : f.correo}`}
-                              className="rounded p-1 text-perla-400 transition hover:text-oro-400"
-                            >
-                              <HugeiconsIcon icon={Edit02Icon} size={15} strokeWidth={2} />
-                            </button>
-                          )}
-                        </span>
+                        {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'}
                       </td>
                       <td className="px-2 py-3">
                         <button
@@ -1097,35 +1065,34 @@ function Panel({
 
         <ModalConfirmar
           visible={borrando !== null}
-          titulo="¿Eliminar esta cuenta?"
-          descripcion="Se borra la cuenta y también su registro de asistencia. Esta acción no se puede deshacer."
+          titulo={pasoBorrado === 1 ? '¿Eliminar esta cuenta?' : 'Última confirmación'}
+          descripcion={
+            pasoBorrado === 1
+              ? 'Se va a borrar la cuenta y también su registro de asistencia.'
+              : 'Esta es la última oportunidad. Cuando confirmes, se borra todo y no habrá forma de recuperarlo.'
+          }
+          iconoPeligro={pasoBorrado === 2}
           detalle={
             borrando ? (
               <p>
-                Vas a eliminar la cuenta de <strong className="text-perla-50">{borrandoNombre}</strong>
-                <br />
-                <span className="font-mono text-xs">{borrando}</span>
+                <span className="block">
+                  Vas a eliminar la cuenta de{' '}
+                  <strong className="text-perla-50">{borrandoNombre}</strong>
+                </span>
+                <span className="mt-1 block font-mono text-xs">{borrando}</span>
+                {pasoBorrado === 2 && (
+                  <span className="mt-3 block text-carmesi-300">
+                    Se borra la cuenta, su ficha de practicante y su asistencia. Todo.
+                  </span>
+                )}
               </p>
             ) : null
           }
+          textoConfirmar={pasoBorrado === 1 ? 'Continuar' : 'Sí, eliminar para siempre'}
+          textoCancelar={pasoBorrado === 1 ? 'Cancelar' : 'Mejor no'}
           confirmando={eliminando}
-          onConfirmar={confirmarBorrado}
-          onCancelar={() => setBorrando(null)}
-        />
-
-        <ModalEditarFecha
-          key={editando?.correo ?? 'ninguna'}
-          visible={editando !== null}
-          correo={editando?.correo ?? ''}
-          nombre={
-            editando
-              ? `${editando.nombres} ${editando.apellidos}`.trim() || editando.correo
-              : ''
-          }
-          fechaActual={editando?.fecha ?? null}
-          guardando={guardandoFecha}
-          onGuardar={(iso) => void guardarFecha(iso)}
-          onCancelar={() => setEditando(null)}
+          onConfirmar={pasoBorrado === 1 ? confirmarPasoUno : () => void confirmarBorrado()}
+          onCancelar={cancelarBorrado}
         />
       </div>
     </div>

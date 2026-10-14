@@ -18,26 +18,6 @@ export async function consultarPanel(): Promise<AdminDatos> {
 }
 
 /**
- * Corrige la fecha y hora de una asistencia ya registrada.
- * Para cuando alguien se olvidó de marcar.
- */
-export async function corregirFecha(correo: string, iso: string): Promise<void> {
-  const { data, error } = await supabase.rpc('corregir_fecha_registro', {
-    p_correo: correo.trim().toLowerCase(),
-    p_fecha: iso,
-  })
-  if (error) {
-    const mensaje = error.message ?? ''
-    if (/NO_ADMIN/i.test(mensaje))
-      throw new Error('Tu cuenta no tiene permiso para corregir fechas.')
-    if (/NO_REGISTRO/i.test(mensaje))
-      throw new Error('Esa persona todavía no ha registrado asistencia.')
-    throw new Error(`No se pudo guardar la fecha: ${mensaje}`)
-  }
-  if (data !== true) throw new Error('No se pudo guardar la fecha.')
-}
-
-/**
  * Elimina una cuenta y, en cascada, su registro de asistencia.
  * Solo puede hacerlo un administrador.
  */

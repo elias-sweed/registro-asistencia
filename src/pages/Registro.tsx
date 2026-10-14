@@ -17,6 +17,7 @@ import {
   TURNOS,
   aplicaCiclo,
   ciclosDe,
+  formatearFecha,
   textoPrograma,
 } from '../lib/constantes'
 import { limpiarNombre, validarNombre } from '../lib/validacion'
@@ -75,6 +76,7 @@ function Formulario({ uid }: { uid: string }) {
   const [turno, setTurno] = useState<Turno | ''>('')
   const [errores, setErrores] = useState<Errores>({})
   const [aviso, setAviso] = useState<{ mensaje: string; tipo: ToastTipo } | null>(null)
+  const [ahora, setAhora] = useState(() => new Date())
   const [yaRegistro, setYaRegistro] = useState(() => navegadorRegistrado(correo) !== null)
   const [celebracion, setCelebracion] = useState<{ nombre: string; programa: string } | null>(null)
   const [bloqueo, setBloqueo] = useState<Bloqueo | null>(null)
@@ -101,6 +103,12 @@ function Formulario({ uid }: { uid: string }) {
     const observador = new ResizeObserver(medir)
     observador.observe(caja)
     return () => observador.disconnect()
+  }, [])
+
+  // El reloj del campo de fecha y hora.
+  useEffect(() => {
+    const id = window.setInterval(() => setAhora(new Date()), 1000)
+    return () => window.clearInterval(id)
   }, [])
 
   const cerrarBienvenida = useCallback(() => {
@@ -445,10 +453,33 @@ function Formulario({ uid }: { uid: string }) {
               </select>
             </Campo>
 
-            <p className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-xs leading-relaxed text-perla-400">
-              La fecha y hora se guardan solas al registrar. Si se te olvidó marcar,
-              comunícate con el coordinador para que lo corrija.
-            </p>
+            <Campo id="fecha" etiqueta="Fecha y hora del registro">
+              <div className="relative">
+                <input
+                  id="fecha"
+                  name="fecha"
+                  type="text"
+                  readOnly
+                  disabled
+                  value={formatearFecha(ahora)}
+                  className="campo pr-11"
+                />
+                <svg
+                  className="pointer-events-none absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 text-oro-500/70"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7.5V12l3 1.8" strokeLinecap="round" />
+                </svg>
+              </div>
+              <p className="mt-1.5 text-xs text-perla-400">
+                Se toma automáticamente al momento de registrar.
+              </p>
+            </Campo>
 
             <div ref={cajaSlider} className="flex justify-center pt-1">
               <SlideCommit
