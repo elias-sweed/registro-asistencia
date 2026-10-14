@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  ArrowLeft01Icon,
   Chart01Icon,
+  Delete02Icon,
   Home01Icon,
   Logout01Icon,
   Refresh01Icon,
@@ -10,6 +12,7 @@ import {
 import Dock from '../components/Dock'
 import type { DockItemData } from '../components/Dock'
 import { Esqueletos } from '../components/Esqueletos'
+import SwipeRow from '../components/SwipeRow'
 import { Escudo, Ornamento } from '../components/Escudo'
 import { GraficoBarras, GraficoDona } from '../components/Graficos'
 import type { Segmento } from '../components/Graficos'
@@ -223,6 +226,21 @@ function Panel({
   const [borrandoNombre, setBorrandoNombre] = useState('')
   const [eliminando, setEliminando] = useState(false)
   const [seccion, setSeccion] = useState('resumen')
+
+  /* La pista de "desliza para eliminar" solo sale la primera vez: cuando ya
+     lo intentaste una vez, ya no hace falta explicarlo. */
+  const [mostrarPista, setMostrarPista] = useState(
+    () => localStorage.getItem('asistencia:pista-borrado') !== '1',
+  )
+
+  const ocultarPista = useCallback(() => {
+    setMostrarPista(false)
+    try {
+      localStorage.setItem('asistencia:pista-borrado', '1')
+    } catch {
+      /* si no se puede guardar, la pista se oculta igual en esta sesion */
+    }
+  }, [])
 
   // El panel no se cuenta a si mismo: las cuentas de administrador se
   // quitan de la lista y de todas las cifras.
@@ -852,84 +870,79 @@ function Panel({
             <Ornamento />
           </div>
 
-          {/* Móvil: una tarjeta por persona */}
+{/* Móvil: filas que se deslizan para eliminar */}
           <ul className="mt-4 space-y-2.5 lg:hidden">
             {filas.length === 0 && (
               <li className="py-8 text-center text-sm text-perla-400">{vacio}</li>
             )}
-            {filas.map((f) => {
+            {filas.map((f, indice) => {
               const esMarcado = f.estado === 'marcaron'
               const nombre = f.nombres || f.apellidos ? `${f.nombres} ${f.apellidos}` : 'Sin datos'
               return (
-                <li key={f.correo} className="rounded-xl border border-white/10 bg-white/5 p-3.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-perla-50">{nombre}</p>
-                      <p className="truncate font-mono text-[11px] text-perla-400">{f.correo}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        esMarcado
-                          ? 'bg-oro-500/15 text-oro-400'
-                          : 'bg-carmesi-500/15 text-carmesi-400'
-                      }`}
-                    >
-                      {esMarcado ? 'Marcó' : 'Sin marcar'}
-                    </span>
-                  </div>
-
-                  <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                    <div>
-                      <dt className="text-perla-500">Programa</dt>
-                      <dd className="text-perla-100">{textoPrograma(f.programa as never)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-perla-500">Ciclo</dt>
-                      <dd className="text-perla-100">
-                        {f.ciclo === null || f.ciclo === 0 ? '—' : f.ciclo}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-perla-500">Turno</dt>
-                      <dd className="text-perla-100">
-                        {esMarcado ? textoTurno(f.turno) : '—'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-perla-500">Marcó asistencia</dt>
-                      <dd className={esMarcado ? 'text-oro-400' : 'text-perla-400'}>
-                        {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'}
-                      </dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="text-perla-500">Creó cuenta</dt>
-                      <dd className="text-perla-300">
-                        {fechaDetallada(f.creado_en).dia}
-                        <span className="ml-1.5 text-perla-400">
-                          {fechaDetallada(f.creado_en).hora}
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
-
-                  <button
-                    type="button"
-                    onClick={() => pedirBorrado(f.correo, `${f.nombres} ${f.apellidos}`.trim() || f.correo)}
-                    className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs text-perla-400 transition hover:border-carmesi-400/60 hover:text-carmesi-400"
+                <li key={f.correo} className="relative">
+                  <SwipeRow
+                    label={`${nombre} — desliza para eliminar`}
+                    height={124}
+                    actionWidth={88}
+                    direction="left"
+                    actionColor="#b32026"
+                    drawerColor="#241a17"
+                    rowColor="rgba(255,255,255,0.05)"
+                    textColor="#ece3d2"
+                    actions={[
+                      {
+                        id: 'eliminar',
+                        label: 'Eliminar',
+                        icon: <HugeiconsIcon icon={Delete02Icon} size={20} strokeWidth={2} />,
+                      },
+                    ]}
+                    onAction={() => ocultarPista()}
+                    onCommit={() => {
+                      ocultarPista()
+                      pedirBorrado(f.correo, nombre)
+                    }}
                   >
-                    <svg
-                      className="h-3.5 w-3.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 001 1h10a1 1 0 001-1l1-13M9 7V4h6v3" />
-                    </svg>
-                    Eliminar esta cuenta
-                  </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate font-medium text-perla-50">
+                          {nombre}
+                        </p>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            esMarcado
+                              ? 'bg-oro-500/15 text-oro-400'
+                              : 'bg-carmesi-500/15 text-carmesi-400'
+                          }`}
+                        >
+                          {esMarcado ? 'Marcó' : 'Sin marcar'}
+                        </span>
+                      </div>
+                      <p className="truncate text-xs text-perla-300">
+                        {textoPrograma(f.programa as never)}
+                        {f.ciclo ? ` · Ciclo ${f.ciclo}` : ''}
+                        {esMarcado ? ` · ${textoTurno(f.turno)}` : ''}
+                      </p>
+                      <p className="truncate text-[11px] text-perla-400">
+                        Marcó: {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'} · Creó{' '}
+                        {fechaDetallada(f.creado_en).dia}{' '}
+                        {fechaDetallada(f.creado_en).hora}
+                      </p>
+                    </div>
+                  </SwipeRow>
+
+                  {indice === 0 && mostrarPista && (
+                    <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-end gap-2 pr-3">
+                      <span className="pista-boton rounded-full bg-carmesi-500/30 p-2 text-carmesi-300">
+                        <HugeiconsIcon icon={Delete02Icon} size={18} strokeWidth={2} />
+                      </span>
+                      <span className="rounded-full border border-carmesi-400/50 bg-carmesi-500/25 px-2.5 py-1 text-[11px] font-semibold text-carmesi-200">
+                        Desliza a la izquierda
+                      </span>
+                      <span className="pista-deslizar" aria-hidden="true">
+                        <HugeiconsIcon icon={ArrowLeft01Icon} size={20} strokeWidth={2} />
+                      </span>
+                    </span>
+                  )}
                 </li>
               )
             })}
@@ -951,15 +964,12 @@ function Panel({
                   <th className="rotulo px-2 py-2.5">
                     <span title="Cuándo registró su asistencia">Marcó asistencia</span>
                   </th>
-                  <th className="rotulo px-2 py-2.5">
-                    <span className="sr-only">Eliminar</span>
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
                 {filas.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-2 py-8 text-center text-perla-400">
+                    <td colSpan={7} className="px-2 py-8 text-center text-perla-400">
                       {vacio}
                     </td>
                   </tr>
@@ -1009,29 +1019,6 @@ function Panel({
                         }`}
                       >
                         {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'}
-                      </td>
-                      <td className="px-2 py-3">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            pedirBorrado(f.correo, `${f.nombres} ${f.apellidos}`.trim() || f.correo)
-                          }
-                          title={`Eliminar la cuenta de ${completo ? `${f.nombres} ${f.apellidos}` : f.correo}`}
-                          aria-label={`Eliminar la cuenta de ${completo ? `${f.nombres} ${f.apellidos}` : f.correo}`}
-                          className="rounded-lg border border-white/10 p-2 text-perla-400 transition hover:border-carmesi-400/60 hover:text-carmesi-400"
-                        >
-                          <svg
-                            className="h-4 w-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 001 1h10a1 1 0 001-1l1-13M9 7V4h6v3" />
-                          </svg>
-                        </button>
                       </td>
                     </tr>
                   )

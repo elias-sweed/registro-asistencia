@@ -138,6 +138,44 @@
     inset 0 1px 0 rgba(236, 217, 160, 0.06);
 }
 
+@keyframes deslizar-pista {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-56px);
+  }
+}
+
+@keyframes flanquear-pista {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+/* Solo se usa para explicar el gesto de eliminar. */
+.pista-deslizar {
+  animation: deslizar-pista 1.9s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+.pista-boton {
+  animation: flanquear-pista 1.9s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pista-deslizar,
+  .pista-boton {
+    animation: none;
+  }
+}
+
 /* ---------- Reporte para imprimir o guardar en PDF ---------- */
 
 .reporte-impresion {

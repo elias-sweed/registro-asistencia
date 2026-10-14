@@ -78,11 +78,16 @@ pide el correo y la contraseña del administrador.
   ejecutar `supabase/admin-arreglo.sql`, que agrega la función `correos_administradores`.
 - **¿Quién registró su asistencia y quién todavía no?**: el listado completo. Abajo del
   título va escrito en frases: «En total hay 14 personas registradas. 11 ya registraron su
-  asistencia y 3 todavía no la registran». En
-  computadora es una tabla y en celular una tarjeta por persona, para no obligar a deslizar
-  la pantalla de lado a lado. Cada fila trae un botón para **eliminar la cuenta**: pide
-  confirmación y borra también el registro de asistencia.
-  Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez para que ese botón funcione.
+  asistencia y 3 todavía no la registran». En computadora es una tabla y en celular son filas
+  compactas. Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez para poder borrar.
+- **Eliminar una cuenta (solo en celular).** Cada fila se desliza a la izquierda y aparece
+  una sola acción roja: **Eliminar**. Si deslizas hasta el final la fila se borra sola; si
+  solo la abres un poco, vuelve a su sitio. En la primera visita una animación sobre la
+  primera fila muestra una flecha que se desliza y el texto «Desliza a la izquierda»; se
+  apaga para siempre en cuanto intentas el gesto una vez. Al soltar aparece la confirmación
+  con el nombre y el correo, y solo entonces se borra la cuenta y su registro de asistencia.
+  Desde una computadora con teclado también funciona: `Tab` hasta la fila, `←` para abrir
+  y `Supr` para eliminar. En la tabla de escritorio ya **no** hay botón de borrar.
 - **Botón Actualizar:** sube al principio de la página y muestra el panel cargando con
   marcos grises (*skeletons*), con un «Actualizando…» junto al título y el ícono girando.
   Los filtros que tuvieras aplicados se mantienen.
@@ -212,6 +217,7 @@ src/
   components/Dock.tsx            dock macOS del panel de administrador
   components/Graficos.tsx      donas, barras y sus modos de interacción
   components/Esqueletos.tsx     marcos de carga del panel
+  components/SwipeRow.tsx        fila que se desliza para eliminar
   components/ModalConfirmar.tsx  confirmación antes de eliminar
   components/ReporteImpresion.tsx documento que se guarda como PDF
   components/SlideCommit.tsx    control deslizante de confirmación (React Bits)
