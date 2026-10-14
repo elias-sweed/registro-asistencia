@@ -16,3 +16,22 @@ export async function consultarPanel(): Promise<AdminDatos> {
   if (error) throw error
   return data
 }
+
+/**
+ * Elimina una cuenta y, en cascada, su registro de asistencia.
+ * Solo puede hacerlo un administrador.
+ */
+export async function eliminarCuenta(correo: string): Promise<void> {
+  const { data, error } = await supabase.rpc('eliminar_cuenta', {
+    p_correo: correo.trim().toLowerCase(),
+  })
+  if (error) {
+    const mensaje = error.message ?? ''
+    if (/NO_ADMIN/i.test(mensaje))
+      throw new Error('Tu cuenta no tiene permiso para eliminar cuentas.')
+    if (/NO_EXISTE/i.test(mensaje))
+      throw new Error('Esa cuenta ya no existe.')
+    throw new Error(`No se pudo eliminar la cuenta: ${mensaje}`)
+  }
+  if (data !== true) throw new Error('No se pudo eliminar la cuenta.')
+}

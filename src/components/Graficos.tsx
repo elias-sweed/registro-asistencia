@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 
 export type Segmento = {
   etiqueta: string
@@ -283,104 +283,6 @@ export function GraficoBarras({
       </ul>
 
       <Pista texto="Haz clic en una barra para esconderla o volver a mostrarla." aviso={aviso} />
-
-      {ocultos.length > 0 && (
-        <button
-          type="button"
-          onClick={() => {
-            setOcultos([])
-            setAviso('Todo visible de nuevo')
-          }}
-          className="mt-2 text-xs font-medium text-oro-400 transition hover:text-oro-300"
-        >
-          Mostrar los {ocultos.length} oculto{ocultos.length === 1 ? '' : 's'}
-        </button>
-      )}
-    </div>
-  )
-}
-
-/** Columnas por día. Clic en un día para apagarlo o encenderlo. */
-export function GraficoColumnas({
-  datos,
-  color = 'var(--color-oro-500)',
-  destacarUltimo = false,
-}: {
-  datos: { etiqueta: string; valor: number }[]
-  color?: string
-  destacarUltimo?: boolean
-}) {
-  const [ocultos, setOcultos] = useState<string[]>([])
-  const [encima, setEncima] = useState<string | null>(null)
-  const [aviso, setAviso] = useAvisoTemporal()
-
-  const visibles = datos.filter((d) => !ocultos.includes(d.etiqueta))
-  const maximo = Math.max(1, ...visibles.map((d) => d.valor))
-
-  function alternar(etiqueta: string) {
-    const vaASerOculto = !ocultos.includes(etiqueta)
-    setOcultos((previos) =>
-      vaASerOculto ? [...previos, etiqueta] : previos.filter((e) => e !== etiqueta),
-    )
-    setAviso(`${etiqueta}: ${vaASerOculto ? 'oculto' : 'mostrado'}`)
-  }
-
-  if (datos.length === 0)
-    return <p className="text-sm text-perla-400">Aún no hay registros de asistencia.</p>
-
-  return (
-    <div>
-      <div className="flex h-44 items-end gap-1.5">
-        {datos.map((dato, indice) => {
-          const oculto = ocultos.includes(dato.etiqueta)
-          const activo = encima === dato.etiqueta
-          const ultimo = destacarUltimo && indice === datos.length - 1
-          const alto = Math.max(3, (dato.valor / maximo) * 128)
-          return (
-            <button
-              key={dato.etiqueta}
-              type="button"
-              onClick={() => alternar(dato.etiqueta)}
-              onMouseEnter={() => setEncima(dato.etiqueta)}
-              onMouseLeave={() => setEncima(null)}
-              aria-pressed={!oculto}
-              className="flex flex-1 cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent p-0"
-            >
-              <span
-                className={`font-mono text-xs transition ${
-                  activo && !oculto ? 'text-oro-300' : 'text-perla-50'
-                } ${oculto ? 'opacity-40' : ''}`}
-              >
-                {oculto ? '·' : dato.valor}
-              </span>
-              <span
-                className="w-full rounded-t transition-[height,filter] duration-500"
-                style={{
-                  height: `${oculto ? 3 : alto}px`,
-                  backgroundColor: color,
-                  opacity: oculto ? 0.25 : 1,
-                  filter: activo && !oculto ? 'brightness(1.3)' : 'none',
-                  outline: ultimo && !oculto ? '1px solid rgba(201,162,39,0.55)' : 'none',
-                }}
-              />
-            </button>
-          )
-        })}
-      </div>
-      <div className="mt-2 flex gap-1.5 border-t border-white/10 pt-2">
-        {datos.map((dato, indice) => (
-          <span
-            key={dato.etiqueta}
-            className={`flex-1 truncate text-center text-[10px] ${
-              ocultos.includes(dato.etiqueta) ? 'text-perla-700' : 'text-perla-400'
-            } ${destacarUltimo && indice === datos.length - 1 ? 'font-semibold text-oro-400' : ''}`}
-          >
-            {dato.etiqueta}
-          </span>
-        ))}
-      </div>
-
-      <Pista texto="Haz clic en un día para esconderlo o volver a mostrarlo." aviso={aviso} />
 
       {ocultos.length > 0 && (
         <button

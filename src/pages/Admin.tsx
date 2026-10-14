@@ -10,10 +10,12 @@ import {
 import Dock from '../components/Dock'
 import type { DockItemData } from '../components/Dock'
 import { Escudo, Ornamento } from '../components/Escudo'
-import { GraficoBarras, GraficoColumnas, GraficoDona } from '../components/Graficos'
+import { GraficoBarras, GraficoDona } from '../components/Graficos'
 import type { Segmento } from '../components/Graficos'
+import { ModalConfirmar } from '../components/ModalConfirmar'
+import { ReporteImpresion } from '../components/ReporteImpresion'
 import { useAuth } from '../context/authContext'
-import { consultarPanel, esAdministrador } from '../lib/admin'
+import { consultarPanel, eliminarCuenta, esAdministrador } from '../lib/admin'
 import { textoPrograma, textoTurno } from '../lib/constantes'
 import { claveDia, diasDesde, fechaConDia, fechaCorta, hoyEnLima } from '../lib/fechas'
 import type { AdminDatos } from '../lib/types'
@@ -128,6 +130,7 @@ export function Admin() {
       datos={datos}
       correo={correo}
       error={error}
+      setError={setError}
       filtro={filtro}
       setFiltro={setFiltro}
       dia={dia}
@@ -146,6 +149,7 @@ function Panel({
   datos,
   correo,
   error,
+  setError,
   filtro,
   setFiltro,
   dia,
@@ -160,6 +164,7 @@ function Panel({
   datos: AdminDatos
   correo: string
   error: string
+  setError: (v: string) => void
   filtro: Filtro
   setFiltro: (v: Filtro) => void
   dia: FiltroDia
@@ -171,7 +176,11 @@ function Panel({
   salir: () => Promise<void>
   recargar: () => void
 }) {
-  const { resumen, por_programa, por_dia, marcaron, pendientes } = datos
+  const [borrando, setBorrando] = useState<string | null>(null)
+  const [borrandoNombre, setBorrandoNombre] = useState('')
+  const [eliminando, setEliminando] = useState(false)
+
+  const { resumen, por_programa, marcaron, pendientes } = datos
 
   const filasBase = useMemo<Fila[]>(() => {
     const marcadas: Fila[] = marcaron.map((f) => ({
@@ -282,11 +291,6 @@ function Panel({
       }))
   }, [marcaron, pendientes, programaCiclo])
 
-  const dias = por_dia.map((f) => ({
-    etiqueta: f.dia.slice(5).split('-').reverse().join('/'),
-    valor: f.total,
-  }))
-
   // La asistencia por turno se cuenta aqui porque cada registro marcado ya
   // trae su turno.
   const porTurno = useMemo(() => {
@@ -306,6 +310,49 @@ function Panel({
 
   const porcentajeMarcaron =
     resumen.cuentas > 0 ? Math.round((resumen.marcaron / resumen.cuentas) * 100) : 0
+
+  const vacio =
+    dia === 'todo'
+      ? 'No hay practicantes que cumplan este filtro.'
+      : 'Nadie registró asistencia ese día.'
+
+  // El PDF imprime exactamente lo que se está viendo en pantalla.
+  const tituloFiltro = [
+    OPCIONES_DIA.find((o) => o.valor === dia)?.texto,
+    filtro === 'marcaron'
+      ? 'solo los que marcaron'
+      : filtro === 'pendientes'
+        ? 'solo los que no han marcado'
+        : null,
+    busqueda.trim() ? `con «${busqueda.trim()}» en el nombre o correo` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  function pedirBorrado(correo: string, nombre: string) {
+    setBorrando(correo)
+    setBorrandoNombre(nombre)
+  }
+
+  async function confirmarBorrado() {
+    if (!borrando) return
+    setEliminando(true)
+    try {
+      await eliminarCuenta(borrando)
+      setBorrando(null)
+      setBorrandoNombre('')
+      recargar()
+    } catch (fallo) {
+      setError(
+        fallo instanceof Error
+          ? fallo.message
+          : 'No se pudo eliminar la cuenta. Inténtalo otra vez.',
+      )
+      setBorrando(null)
+    } finally {
+      setEliminando(false)
+    }
+  }
 
   const scrollA = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -490,23 +537,13 @@ function Panel({
               )}
             </div>
           </article>
-
-          <article className="panel-admin rounded-xl p-6 lg:col-span-2">
-            <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
-              ¿Cuántas personas registraron su asistencia cada día?
-            </h2>
-            <div className="mt-3">
-              <Ornamento />
-            </div>
-            <div className="mt-5">
-              <GraficoColumnas datos={dias} destacarUltimo />
-            </div>
-          </article>
         </section>
 
         {/* Detalle por programa */}
         <section id="programas" className="panel-admin mt-6 rounded-xl p-6 scroll-mt-8">
-          <h2 className="font-display text-lg font-semibold text-perla-50">Avance por programa</h2>
+          <h2 className="font-display text-lg leading-snug font-semibold text-perla-50">
+            ¿Quién falta por marcar en cada programa?
+          </h2>
           <div className="mt-3">
             <Ornamento />
           </div>
@@ -555,20 +592,39 @@ function Panel({
           </ul>
         </section>
 
-        {/* Tabla */}
-        <section id="practicantes" className="panel-admin mt-6 rounded-xl p-6 scroll-mt-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-lg font-semibold text-perla-50">
-              Detalle de practicantes · {filas.length}
-            </h2>
+        {/* Lista de practicantes */}
+        <section id="practicantes" className="panel-admin mt-6 rounded-xl p-5 p-6 scroll-mt-8">
+          <div className="flex flex-wrap items-center gap-3">
             <input
               type="search"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por nombre o correo…"
               aria-label="Buscar practicante"
-              className="campo w-full max-w-xs"
+              className="campo w-full flex-1 sm:max-w-xs"
             />
+            <button
+              type="button"
+              onClick={() => window.print()}
+              disabled={filas.length === 0}
+              title="Guarda este listado como PDF"
+              className="boton-oro inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm disabled:opacity-50"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 3v12M8 11l4 4 4-4" />
+                <path d="M5 17v3h14v-3" />
+              </svg>
+              <span className="hidden sm:inline">Guardar como PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </button>
           </div>
 
           <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-3">
@@ -634,8 +690,87 @@ function Panel({
             <Ornamento />
           </div>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
+          {/* Móvil: una tarjeta por persona */}
+          <ul className="mt-4 space-y-2.5 lg:hidden">
+            {filas.length === 0 && (
+              <li className="py-8 text-center text-sm text-perla-400">{vacio}</li>
+            )}
+            {filas.map((f) => {
+              const esMarcado = f.estado === 'marcaron'
+              const nombre = f.nombres || f.apellidos ? `${f.nombres} ${f.apellidos}` : 'Sin datos'
+              return (
+                <li key={f.correo} className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-perla-50">{nombre}</p>
+                      <p className="truncate font-mono text-[11px] text-perla-400">{f.correo}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        esMarcado
+                          ? 'bg-oro-500/15 text-oro-400'
+                          : 'bg-carmesi-500/15 text-carmesi-400'
+                      }`}
+                    >
+                      {esMarcado ? 'Marcó' : 'Sin marcar'}
+                    </span>
+                  </div>
+
+                  <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <div>
+                      <dt className="text-perla-500">Programa</dt>
+                      <dd className="text-perla-100">{textoPrograma(f.programa as never)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-perla-500">Ciclo</dt>
+                      <dd className="text-perla-100">
+                        {f.ciclo === null || f.ciclo === 0 ? '—' : f.ciclo}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-perla-500">Turno</dt>
+                      <dd className="text-perla-100">
+                        {esMarcado ? textoTurno(f.turno) : '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-perla-500">Marcó asistencia</dt>
+                      <dd className={esMarcado ? 'text-oro-400' : 'text-perla-400'}>
+                        {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'}
+                      </dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className="text-perla-500">Creó cuenta</dt>
+                      <dd className="text-perla-300">{fechaCorta(f.creado_en)}</dd>
+                    </div>
+                  </dl>
+
+                  <button
+                    type="button"
+                    onClick={() => pedirBorrado(f.correo, `${f.nombres} ${f.apellidos}`.trim() || f.correo)}
+                    className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs text-perla-400 transition hover:border-carmesi-400/60 hover:text-carmesi-400"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 001 1h10a1 1 0 001-1l1-13M9 7V4h6v3" />
+                    </svg>
+                    Eliminar esta cuenta
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* Escritorio: tabla */}
+          <div className="mt-4 hidden overflow-x-auto lg:block">
+            <table className="w-full min-w-[860px] text-left text-sm">
               <thead>
                 <tr className="border-b border-white/15">
                   <th className="rotulo px-2 py-2.5">Practicante</th>
@@ -649,15 +784,16 @@ function Panel({
                   <th className="rotulo px-2 py-2.5">
                     <span title="Cuándo registró su asistencia">Marcó asistencia</span>
                   </th>
+                  <th className="rotulo px-2 py-2.5">
+                    <span className="sr-only">Eliminar</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
                 {filas.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-2 py-8 text-center text-perla-400">
-                      {dia === 'todo'
-                        ? 'No hay practicantes que cumplan este filtro.'
-                        : 'Nadie registró asistencia ese día.'}
+                    <td colSpan={8} className="px-2 py-8 text-center text-perla-400">
+                      {vacio}
                     </td>
                   </tr>
                 )}
@@ -704,6 +840,29 @@ function Panel({
                       >
                         {esMarcado && f.fecha ? fechaConDia(f.fecha) : 'Aún no marca'}
                       </td>
+                      <td className="px-2 py-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            pedirBorrado(f.correo, `${f.nombres} ${f.apellidos}`.trim() || f.correo)
+                          }
+                          title={`Eliminar la cuenta de ${completo ? `${f.nombres} ${f.apellidos}` : f.correo}`}
+                          aria-label={`Eliminar la cuenta de ${completo ? `${f.nombres} ${f.apellidos}` : f.correo}`}
+                          className="rounded-lg border border-white/10 p-2 text-perla-400 transition hover:border-carmesi-400/60 hover:text-carmesi-400"
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a1 1 0 001 1h10a1 1 0 001-1l1-13M9 7V4h6v3" />
+                          </svg>
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
@@ -712,9 +871,29 @@ function Panel({
           </div>
         </section>
 
-<p className="mt-6 text-center text-xs text-perla-400">
-            Cada practicante registra su asistencia una sola vez. Las horas corresponden a Lima.
-          </p>
+        <p className="mt-6 mb-2 text-center text-xs text-perla-400">
+          Cada practicante registra su asistencia una sola vez. Las horas corresponden a Lima.
+        </p>
+
+        <ReporteImpresion filas={filas} tituloFiltro={tituloFiltro} />
+
+        <ModalConfirmar
+          visible={borrando !== null}
+          titulo="¿Eliminar esta cuenta?"
+          descripcion="Se borra la cuenta y también su registro de asistencia. Esta acción no se puede deshacer."
+          detalle={
+            borrando ? (
+              <p>
+                Vas a eliminar la cuenta de <strong className="text-perla-50">{borrandoNombre}</strong>
+                <br />
+                <span className="font-mono text-xs">{borrando}</span>
+              </p>
+            ) : null
+          }
+          confirmando={eliminando}
+          onConfirmar={confirmarBorrado}
+          onCancelar={() => setBorrando(null)}
+        />
       </div>
     </div>
   )

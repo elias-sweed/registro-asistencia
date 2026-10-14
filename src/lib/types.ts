@@ -86,6 +86,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: AdminDatos
       }
+      eliminar_cuenta: {
+        Args: { p_correo: string }
+        Returns: boolean
+      }
       registrar_asistencia: {
         Args: {
           p_nombres: string

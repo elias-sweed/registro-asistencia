@@ -138,6 +138,101 @@
     inset 0 1px 0 rgba(236, 217, 160, 0.06);
 }
 
+/* ---------- Reporte para imprimir o guardar en PDF ---------- */
+
+.reporte-impresion {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Se saca la aplicacion del flujo: si solo se escondiera con visibility
+     seguiria ocupando alto y el reporte saldría corrido. */
+  #root {
+    display: none !important;
+  }
+
+  .reporte-impresion {
+    display: block !important;
+    color: #000;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 11px;
+    width: 100%;
+  }
+
+  .reporte-impresion * {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    color: #000 !important;
+  }
+
+  .reporte-impresion .reporte-tabla {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .reporte-impresion .reporte-tabla th,
+  .reporte-impresion .reporte-tabla td {
+    border: 1px solid #999;
+    padding: 4px 6px;
+  }
+
+  .reporte-impresion .reporte-tabla th {
+    background: #eee !important;
+    text-align: center;
+    font-size: 10px;
+  }
+
+  .reporte-impresion .izquierda {
+    text-align: left;
+  }
+
+  .reporte-impresion .firma {
+    width: 120px;
+  }
+
+  .reporte-impresion tr {
+    break-inside: avoid;
+  }
+
+  .reporte-impresion section {
+    break-inside: avoid;
+  }
+
+  .reporte-impresion .firmas {
+    display: flex;
+    justify-content: space-around;
+    gap: 24px;
+    break-inside: avoid;
+  }
+
+  .reporte-impresion .linea-firma {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+
+  .reporte-impresion .raya {
+    display: block;
+    border-bottom: 1px solid #000;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .reporte-impresion .nombre {
+    font-size: 11px;
+  }
+}
+
 /* Campo con etiqueta flotante (estilo del acceso) */
 .campo-flotante {
   width: 100%;

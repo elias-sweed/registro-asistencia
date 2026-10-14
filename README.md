@@ -70,14 +70,17 @@ pide el correo y la contraseña del administrador.
   - *¿Cuántas cuentas hay en cada ciclo?* (barras, con filtro **Todos / SENATI / UCV /
     Docentes** al costado del título y el detalle «3 de 5 marcaron»).
   - *¿Cuántos han asistido en cada turno?* (barras, una por turno).
-  - *¿Cuántas personas registraron su asistencia cada día?* (columnas, el día más reciente
-    va resaltado).
-- **Avance por programa:** una barra por programa con cuántos marcaron de cuántos son.
-- **Tabla** con filtros *Estado* (Todos / Marcaron / Sin marcar) y *Día de la asistencia*
-  (Hoy / Ayer / Antes de ayer / Últimos 7 días / Todo), cada opción con su contador.
-  Muestra el nombre del practicante con su correo debajo, programa, ciclo, turno, estado,
-  cuándo creó su cuenta y cuándo marcó asistencia. Las fechas se leen de un vistazo
-  («Hoy · 09:15», «Ayer · 08:02») y usan la hora de **Lima**.
+- *¿Quién falta por marcar en cada programa?*: una barra por programa con cuántos marcaron
+  de cuántos son.
+- **Lista de practicantes.** En computadora es una tabla y en celular una tarjeta por
+  persona, para no obligar a deslizar la pantalla de lado a lado. Cada fila trae un botón
+  para **eliminar la cuenta**: pide confirmación y borra también el registro de asistencia.
+  Necesitas ejecutar `supabase/eliminar-cuenta.sql` una vez para que ese botón funcione.
+- **Guardar como PDF.** El botón imprime el listado que estás viendo (respeta el día, el
+  estado y la búsqueda que tengas aplicados). El documento sale con dos tablas:
+  **«Sí registraron su asistencia»** y **«Todavía NO han registrado su asistencia»**, cada
+  una con una columna de firma, y al final las líneas para que firmen los dos docentes
+  (Manuel y Edward). En el diálogo de impresión elige «Guardar como PDF».
 - **Dock inferior fijo:** permanece pegado abajo al hacer scroll, para saltar a cada sección,
   actualizar y salir.
 
@@ -189,6 +192,9 @@ src/
   components/CampoClave.tsx      contraseña con ver/ocultar
   components/Escudo.tsx          escudo y ornamentos
   components/Dock.tsx            dock macOS del panel de administrador
+  components/Graficos.tsx      donas, barras y sus modos de interacción
+  components/ModalConfirmar.tsx  confirmación antes de eliminar
+  components/ReporteImpresion.tsx documento que se guarda como PDF
   components/SlideCommit.tsx    control deslizante de confirmación (React Bits)
   components/Toast.tsx           notificaciones
   context/                       sesión de Supabase
@@ -204,6 +210,7 @@ supabase/por-cuenta.sql            un solo registro por cuenta (sin bloqueo por 
 supabase/turnos.sql                agrega el turno MANANA y el parámetro p_turno al RPC
 supabase/admin.sql                 panel de administrador
 supabase/admin-arreglo.sql         acceso al panel sin distinguir mayúsculas + comprobación
+supabase/eliminar-cuenta.sql       permite borrar una cuenta desde el panel
 ```
 
 ## Instalar los scripts de la base de datos
@@ -216,3 +223,4 @@ En **Supabase → SQL Editor**, ejecuta en este orden:
 4. **`supabase/turnos.sql`** ← obligatorio para poder elegir Mañana o Tarde
 5. `supabase/admin.sql`
 6. **`supabase/admin-arreglo.sql`** ← revisa que tu correo aparezca en la lista del final
+7. `supabase/eliminar-cuenta.sql` ← habilita el botón de eliminar cuenta del panel
