@@ -1,14 +1,11 @@
-import { useEffect } from 'react'
-import ASCIIText from './ASCIIText'
-
-const FUENTE_MONO = "'SFMono-Regular', Consolas, 'Liberation Mono', ui-monospace, monospace"
+import { useEffect, useState } from 'react'
 
 export function CelebracionRegistro({
   visible,
   nombre,
   programa,
   onCerrar,
-  duracion = 7000,
+  duracion = 5000,
 }: {
   visible: boolean
   nombre: string
@@ -16,10 +13,23 @@ export function CelebracionRegistro({
   onCerrar: () => void
   duracion?: number
 }) {
+  const [segundos, setSegundos] = useState(5)
+
   useEffect(() => {
     if (!visible) return
-    const id = window.setTimeout(onCerrar, duracion)
-    return () => window.clearTimeout(id)
+    let restante = Math.ceil(duracion / 1000)
+    setSegundos(restante)
+
+    const tick = setInterval(() => {
+      restante -= 1
+      setSegundos(restante)
+      if (restante <= 0) {
+        clearInterval(tick)
+        onCerrar()
+      }
+    }, 1000)
+
+    return () => clearInterval(tick)
   }, [visible, duracion, onCerrar])
 
   useEffect(() => {
@@ -38,50 +48,42 @@ export function CelebracionRegistro({
       role="dialog"
       aria-modal="true"
       aria-label="Asistencia registrada"
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-ink-950/90 px-4 backdrop-blur-sm"
-      onPointerDown={onCerrar}
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-white px-4"
     >
       <div
-        className="panel animate-[surgir_0.45s_ease-out] relative w-full max-w-lg overflow-hidden rounded-xl p-7 text-center"
+        className="relative w-full max-w-sm overflow-hidden rounded-2xl p-8 text-center bg-white shadow-2xl border border-slate-200"
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <p className="rotulo">Asistencia registrada</p>
-
-        <div className="relative mx-auto mt-4 h-[220px] w-full sm:h-[280px]">
-          <ASCIIText
-            text="BIEN HECHO"
-            asciiFontSize={7}
-            fontFamily={FUENTE_MONO}
-            fontWeight={700}
-            textColor="#f7f2e8"
-            colors={['#c9a227', '#b32026', '#ecd9a0']}
-            textScale={0.95}
-            blocks={0.55}
-            waves={0.7}
-            waveSpeed={1.1}
-            chroma={0.7}
-            tilt={0.9}
-            hueShift={0.35}
-            scramble={0.6}
-            clickRipple
-            idle
-            interactive
-          />
+        {/* Check grande estilo Google Forms */}
+        <div className="flex items-center justify-center mb-4">
+          <div className="relative h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+            <svg
+              className="h-9 w-9 text-green-600"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
         </div>
 
-        <h2 className="font-display mt-3 text-2xl font-semibold text-perla-50">{nombre}</h2>
-        <p className="mt-1 text-sm text-perla-300">{programa}</p>
-
-        <div className="mt-5 h-px w-24 mx-auto bg-gradient-to-r from-transparent via-oro-500 to-transparent" />
-
-        <p className="mt-4 text-xs text-perla-400">
-          Al salir se cerrará tu sesión. Mueve el cursor sobre las letras y haz clic para ver la
-          onda.
+        <h2 className="font-display text-xl font-semibold text-slate-900 mb-1">
+          Asistencia registrada
+        </h2>
+        <p className="text-sm text-slate-500 mb-6">
+          Tu asistencia ha sido registrada con éxito.
         </p>
 
-        <button type="button" onClick={onCerrar} className="boton-oro mt-5">
-          Salir y volver al inicio
-        </button>
+        <p className="font-medium text-slate-700 mb-1">{nombre}</p>
+        <p className="text-sm text-slate-500 mb-6">{programa}</p>
+
+        <p className="text-xs text-slate-400">
+          Volviendo al inicio en {segundos}…
+        </p>
       </div>
     </div>
   )

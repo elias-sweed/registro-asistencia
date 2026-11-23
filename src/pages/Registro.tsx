@@ -83,10 +83,11 @@ function Formulario({ uid }: { uid: string }) {
 
   const cerrarBloqueo = useCallback(() => setBloqueo(null), [])
 
-  // Al cerrar el modal de "asistencia registrada" se cierra la sesion
-  // y el practicante vuelve al inicio (pantalla de acceso).
+  // Al terminar la pantalla de confirmacion se cierra la sesion y el
+  // practicante vuelve al inicio (pantalla de acceso). No se limpia
+  // celebracion antes de salir para que nunca se vea el modal de
+  // "ya registraste": el componente se desmonta al navegar a /login.
   const cerrarCelebracionYSalir = useCallback(() => {
-    setCelebracion(null)
     void salir()
   }, [salir])
 
